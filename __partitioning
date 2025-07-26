@@ -101,9 +101,8 @@ encrypt_p() {
 mount_parts() {
     local mount
     declare -A mnts
-    mnts["/dev/mapper/$(get_config_var "ROOT_ENCRYPTED_NAME")"]="/mnt"
-    mnts["/dev/mapper/$(get_config_var "HOME_ENCRYPTED_NAME")"]="/mnt/home"
-    mnts["$(get_config_var "EFI_PARTITION")"]="/mnt/boot"
+    mnts["/dev/mapper/$(get_config_var ROOT_ENCRYPTED_NAME)"]="/mnt"
+    mnts["$(get_config_var EFI_PARTITION)"]="/mnt/boot"
 
     for p in "${!mnts[@]}"; do
         mount="${mnts["$p"]}"

@@ -377,9 +377,9 @@ On @, we will create additional subvolumes to exclude these from future snapshot
             msg_bold -e "\nSTEP FOUR: Mounting partitions and subvolumes"
             msg "During this relatively short step, we will mount our partitions at the following
 mountpoints:
-    - @ subvolume: /mnt
+	- @ subvolume: /mnt
 	- @home subvolume: /mnt/home
-	- @snp subvolume: /mnt/snp (not necessary but helpful because this way the subvolume will be picked up by the genfstab script)
+	- @snp subvolume: /mnt/snp (not necessary but helpful for the genfstab script)
 	- EFI system partition: /mnt/boot
 
 Should any of the mountpoints not exist, they will be created."
