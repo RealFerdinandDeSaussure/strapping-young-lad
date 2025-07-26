@@ -1,0 +1,45 @@
+# -*-bash-ts-*-
+setup_root() {
+    local root
+    root="/dev/mapper/$(get_config_var ROOT_ENCRYPTED_NAME)"
+
+    format_part_btrfs "$root" "$(basename "$root")"
+    create_subvols "$root"
+}
+
+create_subvols() {
+    local root
+    root="$1"
+    msg "Mounting $root..."
+    mount "$root" /mnt || exit 1
+    msg "Creating top level subvolumes @, @home and @snp..."
+    for sv in @ @home @snp; do
+        btrfs subvolume create /mnt/$sv || exit 1
+    done
+    umount /mnt || exit 1
+    mount_subvol "$root" @ /mnt
+
+    msg "Creating additional subvolumes on root subvolume @..."
+    for sv in var/var var/cache var/log swap; do
+        btrfs subvolume create --parents /mnt/"$sv" || exit 1
+    done
+    umount /mnt || exit 1
+}
+
+mount_subvol() {
+    local sv dev mntpt
+    dev="$1"
+    sv="$2"
+    mntpt="$3"
+    mount --mkdir -o subvol="$sv",compress=zstd "$dev" "$mntpt" || exit 1
+}
+
+format_part_btrfs() {
+    local part type fs_label
+    part=$1
+    type=$2
+    read -rp "  Please specify a label for the btrfs file system that will be created on $part (default: $type): " fs_label
+    test -z "$fs_label" && fs_label="$type"
+    mkfs.btrfs -L "$fs_label" "$part" >/dev/null || exit 1
+    echo "$type partition formatted."
+}

@@ -1,0 +1,253 @@
+# -*-bash-ts-*-
+create_parts() {
+    local disk
+    disk="$1"
+    test_efi_part "$disk"
+    msg -e "\nBefore we start, let's have a look at the current partition table:\n"
+    sgdisk -p "$disk" || exit 1
+    msg "
+Partitions created by this script will always use the largest continuous block of empty space available.
+If the partition table is heavily fragmented, you should repartition it manually."
+    msg_bold "The total size of this disk is roughly $(($(blockdev --getsize64 "$disk") / 1000000)) Megabyte.
+The total size of the largest continuous block of empty space is roughly $(get_largest_empty_blk_in_m "$disk") Megabyte."
+    msg "
+When providing partition sizes, you can either give values ending in G(igabyte), M(egabyte) or %(=percentage of total disk space.)
+Without any of these qualifiers at the end, values will be considered sectors of 512-byte size.
+The value 0 means the largest continuously empty block on the disk (most of the time, this is equivalent to the remaining empty space).
+
+Now let's get started."
+    create_part "$disk" "root" "0"
+}
+
+setup_parts() {
+    msg ""
+
+    local disk disk_head
+    while true; do
+        read -rp "  Please provide a path to the disk you would like to use: " disk
+        if [ ! -b "$disk" ]; then
+            msg "$disk is not a block device"
+        elif [ ! "$(dirname "$disk")" = "/dev" ]; then
+            msg "Disk path needs to be in /dev."
+        else
+            break
+        fi
+    done
+
+    config_vars[INSTALL_DISK]="$disk"
+    disk_head="$(udevadm info --query=property "$disk"| awk -F= '{if ($1=="ID_PART_TABLE_TYPE") {print $2}}')" || exit 1
+    msg -n "Is there an existing GUID partition table on $disk? "
+    case "$disk_head" in
+        gpt)
+            msg_bold "Yes."
+        ;;
+        mbr)
+            msg_bold "No, pure MBR found."
+            msg "MBR is not supported. Exiting..."
+            exit 1
+        ;;
+        "")
+            msg_bold "No."
+            if ask_y_n "Would you like to create one?"; then
+                parted "$disk" mklabel gpt >/dev/null 2>&1
+                if [ $? -gt 0 ]; then
+                    msg "There was an error creating the GPT."
+                    exit 1
+                else
+                    msg "Created GPT on $disk."
+                fi
+            else
+                msg "Can't continue without GPT written to disk."
+                exit 1
+            fi
+        ;;
+    esac
+
+    if [ -n "$(findmnt -Q 'SOURCE =~ "'"${disk}"'[0-9]+"')" ]; then
+        msg -e "\nPartitions of $disk are currently mounted. Unmount them before proceeding."
+        exit 1
+    fi
+
+    create_parts "$disk"
+}
+
+encrypt_parts() {
+    # very simple at this point but maybe in the future other partition schemes
+    # will be supported
+    encrypt_p "$(get_config_var ROOT_PARTITION)" cryptroot
+    config_vars[ROOT_ENCRYPTED_NAME]="cryptroot"
+}
+
+encrypt_p() {
+    local part crypt_part pw pw_bckp
+    part="$1"
+    crypt_part="$2"
+
+    while true; do
+        read -rp "  Give an encryption password for $part: " pw
+        read -rp "  Please repeat the password for $part: " pw_bckp
+        test "$pw" = "$pw_bckp" && break
+        msg "Passwords do not match. Please try again."
+    done
+
+    msg -e "\nEncrypting partition at $part. THIS WILL IRREVOCABLY DESTROY ALL DATA ON $part."
+    ask_y_n "Are you sure you want to continue?" || exit 1
+
+    cryptsetup luksFormat --key-file - "$part" <<< "$pw" || exit 1
+    msg "Mapping unlocked partition $part to $crypt_part..."
+    cryptsetup open --key-file - "$part" "$crypt_part" <<< "$pw" || exit 1
+}
+
+mount_parts() {
+    local mount
+    declare -A mnts
+    mnts["/dev/mapper/$(get_config_var "ROOT_ENCRYPTED_NAME")"]="/mnt"
+    mnts["/dev/mapper/$(get_config_var "HOME_ENCRYPTED_NAME")"]="/mnt/home"
+    mnts["$(get_config_var "EFI_PARTITION")"]="/mnt/boot"
+
+    for p in "${!mnts[@]}"; do
+        mount="${mnts["$p"]}"
+        msg "Mounting $p at $mount..."
+        mount --mkdir "$p" "$mount" || exit 1
+    done
+}
+
+get_lowest_part_num() {
+    for p in $(seq 1 128); do
+        if [ ! -b "${1}$p" ]; then
+            echo -n "$p"
+            return
+        fi
+    done
+    msg "The maximum number of 128 partitions on $1 has already been reached. Oof."
+    exit 1
+}
+
+create_efi_part() {
+    local empty_blk start_sec end_sec part_num part
+    empty_blk=$(get_largest_empty_blk_in_m "$1")
+    if [ "$empty_blk" -lt 1000 ]; then
+        msg "Only $empty_blk Megabyte on $1, not enough to continue."
+        exit 1
+    fi
+
+    start_sec="$(sgdisk -F "$1")"
+    end_sec="$((size=1000 * 1000000 / 512, start_sec + size))"
+    part_num=$(get_lowest_part_num "$1")
+    sgdisk -n "$part_num":"$start_sec":"$end_sec" "$1" -t "$1":EF00 || exit 1
+    msg "EFI Partition created."
+
+    part="${1}$part_num"
+    test_part "$part" || exit 1
+    config_vars["EFI_PARTITION"]="$part"
+
+    mkfs.fat -F 32 "$part" >/dev/null || exit 1
+    msg "EFI partition formatted."
+}
+
+parse_part_size() {
+    local size unit disk
+    disk="$(get_config_var INSTALL_DISK)"
+
+    if [[ "$1" == "0" ]]; then
+        get_largest_empty_blk "$disk"
+        return
+    fi
+
+    unit="$(echo -n "${1: -1}" | tr "[:lower:]" "[:upper:]")"
+    size="${1:0:$((${#1} - 1))}"
+    case "$unit" in
+        G)
+            echo -n "$(("$size" * 1000000000 / 512))"
+            return
+            ;;
+        M)
+            echo -n "$(("$size" * 1000000 / 512))"
+            return
+            ;;
+        %)
+            # use awk cause bash math expansion doesn't support floating point
+            local leb product
+            leb=$(get_largest_empty_blk "$disk") || exit 1
+            product=$(awk 'BEGIN {printf "%d", '"$leb"' * ('"$size"' / 100)}')
+            msg "This is equal to $(("$product" * 512 / 1000000)) Megabyte."
+            if ask_y_n "Would you like to continue?"; then
+                echo -n "$product"
+                return
+            else
+                return 1
+            fi
+            ;;
+        [0-9])
+            if [[ "$1" =~ ^[0-9]+ ]]; then
+                echo -n "$1"
+                return
+            fi
+            ;&
+        *)
+            msg "Couldn't parse size '$1'."
+            return 1
+            ;;
+    esac
+}
+
+test_efi_part() {
+    local efi_part
+    msg -n "EFI system partition on $1? "
+    while read -r line; do
+        if [ "$(echo "$line" | cut -d" " -f2 | tr "[:upper:]" "[:lower:]")" = "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" ]; then
+            efi_part="$(echo -n "$line" | cut -d" " -f1)"
+            break
+        fi
+    done < <(lsblk -no PATH,PARTTYPE "$1")
+
+    if [ -n "$efi_part" ]; then
+        msg_bold "Yes."
+        return
+    else
+        msg_bold "No."
+        if ask_y_n "Would you like to create one?"; then
+            create_efi_part "$1"
+        else
+            msg "Can't continue without EFI system partition."
+            exit 1
+        fi
+    fi
+}
+
+create_part() {
+    local disk type default size part part_num start_sec end_sec fs_label
+    disk=$1
+    type=$2
+    default=$3
+    while true; do
+        read -rp "  Please provide the desired size of partition '$type' (default: $default): " val
+        test -z "$val" && val="$default"
+        size="$(parse_part_size "$val")"
+        test ! $? -eq 0 && continue
+        if [ "$(get_largest_empty_blk "$disk")" -ge "$size" ]; then
+            break
+        else
+            msg "Disk $disk does not have enough empty space to accomodate a partition of size $val."
+        fi
+    done
+
+    part_num="$(get_lowest_part_num "$disk")"
+    start_sec="$(sgdisk -F "$disk")" || exit 1
+    end_sec=$(("$start_sec" + "$size"))
+    sgdisk -n "$part_num":"$start_sec":"$end_sec" "$disk" || exit 1
+    echo "$type partition created."
+
+    part="$disk$part_num"
+    test_part "$part" || exit 1
+    config_vars["$(echo -n "${type}_PARTITION" | tr "[:lower:]" "[:upper:]")"]="$part"
+}
+
+test_part() {
+    if [ ! -b "$1" ]; then
+        msg "Oh no, something wrent something somewhere and there is no partition at $1."
+        return 1
+    else
+        return 0
+    fi
+}
