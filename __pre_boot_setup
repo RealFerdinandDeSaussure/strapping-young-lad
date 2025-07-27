@@ -35,20 +35,22 @@ set_locales() {
     declare -a items locales
 
     sed -ri 's/^#(en_US.UTF-8 UTF-8)/\1/' /mnt/etc/locale.gen
-    msg "Choose any locale you wish to include on your system. 'en_US.UTF-8' is always included."
+    msg "Choose any locale you wish to include on your system. 'en_US UTF-8' is always included.
+Only UTF-8 locales are supported by this script."
 
     while read -r line; do
-        items+=("$line")
+        [[ ! "$line" =~ "UTF-8" ]] && continue
+        items+=("$(echo "$line" | cut -d" " -f1)")
     done < <(sed -rn 's/^#(\S+\s\S+)/\1/p' /mnt/etc/locale.gen)
     while true; do
         if ask_y_n "Do you wish to add more locales?"; then
-            locales+=("$(select_item "${items[@]}")")
+            locales+=("$(select_item "${items[@]}") UTF-8")
         else
             break
         fi
     done
     for l in "${locales[@]}"; do
-        sed -ri 's/^#('"$l"')\1/' /mnt/etc/locale.gen
+        sed -ri 's/^#('"$l"')/\1/' /mnt/etc/locale.gen
     done
     achroot locale-gen || exit 1
 
