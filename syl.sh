@@ -179,7 +179,6 @@ bootstrap() {
         exit 1
     fi
 
-    msg ""
     while true; do
         read -rp "Please enter the name of your desired kernel package (default: linux): " kernel
         test -z "$kernel" && kernel=linux
@@ -333,9 +332,11 @@ mount_system() {
 }
 
 step() {
+    msg ""
+
     case "$1" in
         1)
-            msg_bold -e "\nSTEP ONE: Setting up the partition table"
+            msg_bold "STEP ONE: Setting up the partition table"
             msg "Specify a disk with unpartitioned disk space. It will be formatted and the
 following partitions will be created on it:
 	- an EFI system partition of size 1G if one does not exist already
@@ -343,7 +344,7 @@ following partitions will be created on it:
             ask_for_skip && setup_parts
             ;;
         2)
-            msg_bold -e "\nSTEP TWO: Encrypting and formatting the partitions"
+            msg_bold "STEP TWO: Encrypting and formatting the partitions"
             msg "Next, we will encrypt the root partition using LUKS2 encryption. You will be
 asked for a password. If you intend to use this password as a decryption key on
 the final system, you should choose a secure one.
@@ -355,7 +356,7 @@ After encryption, the root partition will be unlocked so it can be used in the n
             ask_for_skip && encrypt_parts
             ;;
         3)
-            msg_bold -e "\nSTEP THREE: Creating btrfs subvolumes"
+            msg_bold "STEP THREE: Creating btrfs subvolumes"
             msg "Instead of a conventional partitioning scheme, we will be using btrfs subvolumes
 on a single btrfs partition to simulate a multi-partition structure. This has
 the advantage of being able to encrypt a single partition and store all data on
@@ -374,7 +375,7 @@ On @, we will create additional subvolumes to exclude these from future snapshot
             ask_for_skip && setup_root
             ;;
         4)
-            msg_bold -e "\nSTEP FOUR: Mounting partitions and subvolumes"
+            msg_bold "STEP FOUR: Mounting partitions and subvolumes"
             msg "During this relatively short step, we will mount our partitions at the following
 mountpoints:
 	- @ subvolume: /mnt
@@ -386,7 +387,7 @@ Should any of the mountpoints not exist, they will be created."
             ask_for_skip && mount_parts
             ;;
         5)
-            msg_bold -e "\nSTEP FIVE: Bootstrapping the system"
+            msg_bold "STEP FIVE: Bootstrapping the system"
             msg "Now, we will bootstrap the system by coping a base ArchLinux system to the partitions.
 Normally, this base system will consist of three packages: base, linux and linux-firmware.
 If you wish, you can switch out 'linux' with a different kernel package. You may
@@ -394,22 +395,25 @@ also choose additional packages to be installed."
             ask_for_skip && bootstrap
             ;;
         6)
-            msg_bold -e "\nSTEP SIX: Setting up the system"
+            msg_bold "STEP SIX: Setting up the system"
             msg "This will setup the system so that it becomes bootable.
 During this process, the following options can be customized:
 	- FILL IN HERE"
             ask_for_skip && system_prepare
             ;;
     esac
+    msg ""
 }
 # --- end functions
 
 if ! (return 0 2>/dev/null); then
     if [ -z "$1" ]; then
         start=1
-        msg -e "\n-----------------------------------
+        msg -e "
+-----------------------------------
 Greetings! Let's install \033[34mArchLinux\033[0m!
------------------------------------\n"
+-----------------------------------
+"
     else
         start="$1"
     fi

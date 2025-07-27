@@ -20,8 +20,6 @@ Now let's get started."
 }
 
 setup_parts() {
-    msg ""
-
     local disk disk_head
     while true; do
         read -rp "  Please provide a path to the disk you would like to use: " disk
@@ -84,8 +82,10 @@ encrypt_p() {
     crypt_part="$2"
 
     while true; do
-        read -rp "  Give an encryption password for $part: " pw
-        read -rp "  Please repeat the password for $part: " pw_bckp
+        read -rsp "  Give an encryption password for $part: " pw
+        msg ""
+        read -rsp "  Please repeat the password for $part: " pw_bckp
+        msg ""
         test "$pw" = "$pw_bckp" && break
         msg "Passwords do not match. Please try again."
     done
