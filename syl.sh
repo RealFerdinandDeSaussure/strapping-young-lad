@@ -116,11 +116,12 @@ ask_y_n() {
     local choice choice_len yes no return
     yes=yes
     no=no
+    choice_len=1
 
     while [ -z "$return" ]; do
         msg_bold -n "  $1 "
         read -rp "[Yes/No] " choice
-        choice_len=${#choice}
+        test -n "$choice" && choice_len=${#choice}
         test "$choice_len" -eq 0 && continue
         choice="$(echo "$choice" | xargs | tr "[:upper:]" "[:lower:]")"
         case $choice in
@@ -140,11 +141,12 @@ ask_for_skip() {
     yes=yes
     abort=abort
     skip=skip
+    choice_len=1
 
     while [ -z "$return" ]; do
           msg_bold -n "  Would you like to continue? "
           read -rp "[Yes/Abort/Skip] " choice
-          choice_len=${#choice}
+          test -n "$choice" && choice_len=${#choice}
           choice="$(echo "$choice" | xargs | tr "[:upper:]" "[:lower:]")"
           case $choice in
               "${yes:0:$choice_len}")
@@ -363,7 +365,7 @@ the advantage of being able to encrypt a single partition and store all data on
 it. Additionally, we can make use of btrfs's snapshot feature to backup
 subvolumes.
 First we will format root with a btrfs filesystem.
-Afterwards, the following subvolums will be created:
+Afterwards, the following subvolumes will be created:
 	- @: the root file system, to be mounted at /
 	- @home: the home \"partition\", to be mounted at /home
 	- @snp: a subvolume to hold snapshots of other subvolumes, to be mounted at /snp

@@ -82,7 +82,7 @@ encrypt_p() {
     crypt_part="$2"
 
     while true; do
-        read -rsp "  Give an encryption password for $part: " pw
+        read -rsp "  Please give an encryption password for $part: " pw
         msg ""
         read -rsp "  Please repeat the password for $part: " pw_bckp
         msg ""
