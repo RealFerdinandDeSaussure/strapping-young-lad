@@ -13,8 +13,10 @@ man_config_vars[ROOT_ENCRYPTED_NAME]="Name of the mapping for the unlocked encry
 SCRIPT_DIR="$(dirname "$0")"
 STEPS=6
 
-source "$SCRIPT_DIR/__partitioning"
-source "$SCRIPT_DIR/__btrfs"
+# shellcheck source=./*
+for i in "$SCRIPT_DIR/"__*; do
+    source "$i"
+done
 
 # --- functions
 get_config_var() {
@@ -51,6 +53,7 @@ msg() {
 
 pause() {
     read -n1 -srp "Press any key to continue."
+    msg ""
 }
 
 test_root() {
@@ -224,95 +227,23 @@ tab_display() {
     local count
     count=0
     for i in "$@"; do
-        printf "%-20s" "$i"
-        (( (++count % 6) == 0)) && echo
+        printf "%-20s" "$i" >&2
+        (( (++count % 6) == 0)) && msg ""
     done
-    (( count % 6 > 0 )) && echo
+    (( count % 6 > 0 )) && msg ""
 }
 
 select_item() {
     local answer
-    tab_display "${1[@]}"
+    tab_display "$@"
     while true; do
-        read -rp "Please enter one of the above: " answer
-        for i in "${1[@]}"; do
-            test "$i" = "$answer" && break
+        read -rp "  Please enter one of the above (honoring case): " answer
+        for i in "$@"; do
+            test "$i" = "$answer" && break 2
         done
         msg "$answer is not a valid option."
     done
     echo -n "$answer"
-}
-
-set_time() {
-    local region city
-    declare -a items
-
-    for i in /mnt/usr/share/zoneinfo/[A-Z]*; do
-        test -d "$i" && items+=("$i")
-    done
-    msg "First, select a region:"
-    region=$(select_item "${items[@]}")
-
-    items=()
-    for i in /mnt/usr/share/zoneinfo/"$region"/[A-Z]*; do
-        test -f "$i" && items+=("$i")
-    done
-    msg -e "\nNow, select a city:"
-    city=$(select_item "${items[@]}")
-
-    msg "Setting $region/$city as local time..."
-    ln -sf "/mnt/usr/share/zoneinfo/$region/$city" /mnt/etc/localtime || exit 1
-
-    msg "Setting up /etc/adjtime so the system will not modify the hardware clock..."
-    arch-chroot /mnt hwclock --systohc || exit 1
-
-    msg "Activating systemd-timesyncd with default config for continuous time synchronization..."
-    arch-chroot /mnt systemctl enable systemd-timesyncd.service || exit 1
-}
-
-set_locales() {
-    local system_locale
-    declare -a items locales
-
-    sed -ri 's/^#(en_US.UTF-8 UTF-8)/\1/' /mnt/etc/locale.gen
-    msg "Choose any locale you wish to include on your system. 'en_US.UTF-8' is always included."
-
-    while read -r line; do
-        items+=("$line")
-    done < <(sed -rn 's/^#(\S+\s\S+)/\1/p' /mnt/etc/locale.gen)
-    while true; do
-        locales+=("$(select_item "${items[@]}")")
-        ask_y_n "Do you wish to add more locales?" || break
-    done
-    for l in "${locales[@]}"; do
-        sed -ri 's/^#('"$l"')\1/' /mnt/etc/locale.gen
-    done
-    arch-chroot /mnt locale-gen || exit 1
-
-    items=()
-    msg -e "\nChoose a system locale among the ones you previously selected to be included."
-    while read -r line; do
-        items+=("$line")
-    done < <(sed -rn 's/^([^#]\S+).+/\1/p' /mnt/etc/locale.gen)
-    system_locale="$(select_item "${items[@]}")"
-    arch-chroot /mnt localectl set-locale LANG="$system_locale" || exit 1
-}
-
-system_prepare() {
-    msg "Generating fstab..."
-    genfstab -U /mnt >> /mnt/etc/fstab || exit 1
-    msg "The fstab file was successfully created. However, it is recommended to check it manually for errors.
-For this, we will open it using the application set as \$EDITOR."
-    pause
-    $EDITOR /mnt/etc/fstab
-    ask_y_n "Would you like to continue? (Replying no will exit the script.)" || exit
-
-    msg -e "\nNext, we'll set up time. Please note that your system's hardware clock needs to be set to UTC for this to work correctly."
-    pause
-    set_time
-
-    msg -e "\nNext step is locale settings on the system."
-    set_locales
 }
 
 mount_system() {
@@ -391,17 +322,21 @@ Should any of the mountpoints not exist, they will be created."
             ;;
         5)
             msg_bold "STEP FIVE: Bootstrapping the system"
-            msg "Now, we will bootstrap the system by coping a base ArchLinux system to the partitions.
-Normally, this base system will consist of three packages: base, linux and linux-firmware.
+            msg "Now, we will bootstrap the system by coping a base ArchLinux install to the
+prepared system. Normally, this base system will consist of three packages:
+base, linux and linux-firmware.
 If you wish, you can switch out 'linux' with a different kernel package. You may
 also choose additional packages to be installed."
             ask_for_skip && bootstrap
             ;;
         6)
             msg_bold "STEP SIX: Setting up the system"
-            msg "This will setup the system so that it becomes bootable.
+            msg "Now, we will setup the system so that it becomes bootable.
 During this process, the following options can be customized:
-	- FILL IN HERE"
+	- the fstab file
+	- system clock and time settings
+	- locale
+	- supported network interfaces"
             ask_for_skip && system_prepare
             ;;
     esac

@@ -1,0 +1,191 @@
+# -*-bash-ts-*-
+achroot() {
+    arch-chroot /mnt "$@"
+}
+
+set_time() {
+    local region city
+    declare -a items
+
+    for i in /mnt/usr/share/zoneinfo/[A-Z]*; do
+        test -d "$i" && items+=("$(basename "$i")")
+    done
+    msg "First, select a region:"
+    region=$(select_item "${items[@]}")
+
+    items=()
+    for i in /mnt/usr/share/zoneinfo/"$region"/[A-Z]*; do
+        test -f "$i" && items+=("$(basename "$i")")
+    done
+    msg -e "\nNow, select a city:"
+    city=$(select_item "${items[@]}")
+
+    msg "Setting $region/$city as local time..."
+    ln -sf "/mnt/usr/share/zoneinfo/$region/$city" /mnt/etc/localtime || exit 1
+
+    msg "Setting up /etc/adjtime so the system will not modify the hardware clock..."
+    achroot hwclock --systohc || exit 1
+
+    msg "Activating systemd-timesyncd with default config for continuous time synchronization..."
+    achroot systemctl enable systemd-timesyncd.service || exit 1
+}
+
+set_locales() {
+    local system_locale
+    declare -a items locales
+
+    sed -ri 's/^#(en_US.UTF-8 UTF-8)/\1/' /mnt/etc/locale.gen
+    msg "Choose any locale you wish to include on your system. 'en_US.UTF-8' is always included."
+
+    while read -r line; do
+        items+=("$line")
+    done < <(sed -rn 's/^#(\S+\s\S+)/\1/p' /mnt/etc/locale.gen)
+    while true; do
+        if ask_y_n "Do you wish to add more locales?"; then
+            locales+=("$(select_item "${items[@]}")")
+        else
+            break
+        fi
+    done
+    for l in "${locales[@]}"; do
+        sed -ri 's/^#('"$l"')\1/' /mnt/etc/locale.gen
+    done
+    achroot locale-gen || exit 1
+
+    items=()
+    msg -e "\nChoose the system locale among the ones you previously selected."
+    while read -r line; do
+        items+=("$line")
+    done < <(sed -rn 's/^([^#]\S+).+/\1/p' /mnt/etc/locale.gen)
+    system_locale="$(select_item "${items[@]}")"
+    achroot localectl set-locale LANG="$system_locale" || exit 1
+}
+
+set_hostname() {
+    local hostname
+    while true; do
+        read -rp "  Please type in a hostname: " hostname
+        hostname="$(echo -n "$hostname" | tr -dc '[:alnum:]' | tr '[:upper:]' '[:lower:]')"
+        hostname="${hostname/-/}"
+        msg "Adapted to adhere to RFC 1178, this is your hostname: $hostname"
+        ask_y_n "Would you like to continue with this name?" && break
+    done
+    echo "$hostname" > /mnt/etc/hostname || exit 1
+}
+
+set_vcons_kl() {
+    declare -a layouts
+    while read -r line; do
+        layouts+=("$line")
+    done < <(localectl list-keymaps)
+
+    echo "KEYMAP=$(select_item "${layouts[@]}" | xargs)" > /mnt/etc/vconsole.conf || exit 1
+}
+
+create_netservice() {
+    local base service custom
+    declare -a ex
+    base="$1"
+    custom="$2"
+
+    msg "Creating link to $base service file..."
+    ex=(/mnt/usr/lib/systemd/network/*-"$base".network.example)
+    service="$(basename "${ex[0]/%.example/}")"
+    ln -vs "${ex[0]}" /mnt/etc/systemd/network/"$service" || exit 1
+    echo "[Link]
+Multicast=yes
+RequiredForOnline=routable
+
+[Network]
+MulticastDNS" > "$custom"
+    echo -n "$service"
+}
+
+create_net_dropin() {
+    networkctl edit "$1" --drop-in custom --stdin < "$2" || exit 1
+}
+
+setup_network() {
+    local eth_serv wifi_serv eth_custom wifi_custom
+    declare -a ex
+    eth_custom="$(mktemp)"
+    wifi_custom="$(mktemp)"
+
+    msg "Let's go through each interface setup separately."
+    ask_y_n "Would you like to configure wired network access?" && eth_serv="$(create_netservice ethernet "$eth_custom")"
+    if ask_y_n "Would you like to configure wireless network access?"; then
+        wifi_serv="$(create_netservice wifi-station "$wifi_custom")"
+        echo "IgnoreCarrierLoss=3s" >> "$wifi_custom"
+        achroot pacman -Sy iwd || exit 1
+        achroot systemctl enable iwd.service || exit 1
+    fi
+
+    test -z "$eth_serv$wifi_serv" && return
+
+    if [ -n "$eth_serv" ] && [ -n "$wifi_serv" ]; then
+        for c in "$eth_custom" "$wifi_custom"; do
+            echo -e "\n[DHCPv4]
+RouteMetric=100
+
+[IPv6AcceptRA]
+RouteMetric=100 " >> "$c"
+        done
+    fi
+
+    msg "There are a couple of improvements over the basic systemd provided network files
+that can be set up in addition. These include:
+    - Multicast/MulticastDNS support
+    - making systemd wait for a routable IP address
+    - creating a smoother transition from wifi to ethernet connections (if both are available)"
+    if ask_y_n "Would you like to add these to the existing network configurations?"; then
+        msg "Creating custom drop-in file(s)..."
+        test -n "$eth_serv" && create_net_dropin "$eth_serv" "$eth_custom"
+        test -n "$wifi_serv" && create_net_dropin "$wifi_serv" "$wifi_custom"
+    fi
+
+    msg "Installing and setting up dnscrypt-proxy for local DNS resolving..."
+    achroot pacman -Sy dnscrypt-proxy || exit 1
+    sed -ri 's/^listen_addresses.+$/listen_addresses = ['\''127.0.0.1:53'\'', '\''[::1]:53'\'']/' /mnt/etc/dnscrypt-proxy/dnscrypt-proxy.toml
+    echo "nameserver ::1
+nameserver 127.0.0.1
+options edns0" >> /mnt/etc/resolv.conf
+
+
+    msg "Enabling required systemd services..."
+    achroot systemctl enable systemd-networkd.service || exit 1
+    achroot systemctl enable dnscrypt-proxy.service || exit 1
+    if [ -n "$wifi_serv" ]; then
+        achroot systemctl enable iwd.service || exit 1
+    fi
+}
+
+system_prepare() {
+    msg "Generating fstab..."
+    genfstab -U /mnt >> /mnt/etc/fstab || exit 1
+    msg "The fstab file was successfully created. However, it is recommended to check it manually for errors.
+For this, we will open it using the application set as \$EDITOR."
+    pause
+    $EDITOR /mnt/etc/fstab
+    ask_y_n "Would you like to continue? (Replying no will exit the script.)" || exit
+
+    msg -e "\nNext, we'll set up time. Please note that your system's hardware clock needs to be set to UTC for this to work correctly."
+    pause
+    set_time
+
+    msg -e "\nNow, locale settings."
+    set_locales
+
+    msg -e "\nIf you are using a keyboard layout other than the default US one, you can set
+it for the virtual console. This will most likely not affect the keyboard
+settings in a desktop environment."
+    ask_y_n "Would you like to select a non-default keyboard layout for the virtual console?" || set_vcons_kl
+
+    msg -e "\nSelect, a hostname next. In line with RFC 1178, a hostname should only include
+lowercase letters, digits and dashes (but not at the beginning)."
+    set_hostname
+
+    msg -e "\nFor network access on the new system, we will use systemd-networkd and
+optionally iwd for wireless access."
+    pause
+    setup_network
+}
