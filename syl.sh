@@ -362,7 +362,8 @@ on a single btrfs partition to simulate a multi-partition structure. This has
 the advantage of being able to encrypt a single partition and store all data on
 it. Additionally, we can make use of btrfs's snapshot feature to backup
 subvolumes.
-We will create the following subvolumes:
+First we will format root with a btrfs filesystem.
+Afterwards, the following subvolums will be created:
 	- @: the root file system, to be mounted at /
 	- @home: the home \"partition\", to be mounted at /home
 	- @snp: a subvolume to hold snapshots of other subvolumes, to be mounted at /snp
@@ -384,7 +385,7 @@ mountpoints:
 	- EFI system partition: /mnt/boot
 
 Should any of the mountpoints not exist, they will be created."
-            ask_for_skip && mount_parts
+            ask_for_skip && mount_system
             ;;
         5)
             msg_bold "STEP FIVE: Bootstrapping the system"

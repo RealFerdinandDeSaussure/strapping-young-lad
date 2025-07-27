@@ -98,19 +98,6 @@ encrypt_p() {
     cryptsetup open --key-file - "$part" "$crypt_part" <<< "$pw" || exit 1
 }
 
-mount_parts() {
-    local mount
-    declare -A mnts
-    mnts["/dev/mapper/$(get_config_var ROOT_ENCRYPTED_NAME)"]="/mnt"
-    mnts["$(get_config_var EFI_PARTITION)"]="/mnt/boot"
-
-    for p in "${!mnts[@]}"; do
-        mount="${mnts["$p"]}"
-        msg "Mounting $p at $mount..."
-        mount --mkdir "$p" "$mount" || exit 1
-    done
-}
-
 get_lowest_part_num() {
     for p in $(seq 1 128); do
         if [ ! -b "${1}$p" ]; then
