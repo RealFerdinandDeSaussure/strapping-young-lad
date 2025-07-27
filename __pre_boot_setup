@@ -93,7 +93,7 @@ create_netservice() {
     msg "Creating link to $base service file..."
     ex=(/mnt/usr/lib/systemd/network/*-"$base".network.example)
     service="$(basename "${ex[0]/%.example/}")"
-    ln -vs "${ex[0]}" /mnt/etc/systemd/network/"$service" || exit 1
+    ln -vfs "${ex[0]}" /mnt/etc/systemd/network/"$service" || exit 1
     echo "[Link]
 Multicast=yes
 RequiredForOnline=routable
@@ -104,22 +104,23 @@ MulticastDNS" > "$custom"
 }
 
 create_net_dropin() {
-    networkctl edit "$1" --drop-in custom --stdin < "$2" || exit 1
+    local dropin
+    dropin="/tmp/$(basename "$2")"
+
+    achroot "networkctl edit \"$1\" --drop-in custom --stdin < \"$dropin\"" || exit 1
 }
 
 setup_network() {
     local eth_serv wifi_serv eth_custom wifi_custom
     declare -a ex
-    eth_custom="$(mktemp)"
-    wifi_custom="$(mktemp)"
+    eth_custom=/mnt/tmp/eth_custom.tmp
+    wifi_custom=/mnt/tmp/wifi_custom.tmp
 
-    msg "Let's go through each interface setup separately."
     ask_y_n "Would you like to configure wired network access?" && eth_serv="$(create_netservice ethernet "$eth_custom")"
     if ask_y_n "Would you like to configure wireless network access?"; then
         wifi_serv="$(create_netservice wifi-station "$wifi_custom")"
         echo "IgnoreCarrierLoss=3s" >> "$wifi_custom"
-        achroot pacman -Sy iwd || exit 1
-        achroot systemctl enable iwd.service || exit 1
+        achroot pacman -Sy --needed iwd || exit 1
     fi
 
     test -z "$eth_serv$wifi_serv" && return
@@ -134,7 +135,7 @@ RouteMetric=100 " >> "$c"
         done
     fi
 
-    msg "There are a couple of improvements over the basic systemd provided network files
+    msg -e "\nThere are a couple of improvements over the basic systemd provided network files
 that can be set up in addition. These include:
     - Multicast/MulticastDNS support
     - making systemd wait for a routable IP address
@@ -146,7 +147,7 @@ that can be set up in addition. These include:
     fi
 
     msg "Installing and setting up dnscrypt-proxy for local DNS resolving..."
-    achroot pacman -Sy dnscrypt-proxy || exit 1
+    achroot pacman -Sy --needed dnscrypt-proxy || exit 1
     sed -ri 's/^listen_addresses.+$/listen_addresses = ['\''127.0.0.1:53'\'', '\''[::1]:53'\'']/' /mnt/etc/dnscrypt-proxy/dnscrypt-proxy.toml
     echo "nameserver ::1
 nameserver 127.0.0.1
@@ -180,7 +181,7 @@ For this, we will open it using the application set as \$EDITOR."
     msg -e "\nIf you are using a keyboard layout other than the default US one, you can set
 it for the virtual console. This will most likely not affect the keyboard
 settings in a desktop environment."
-    ask_y_n "Would you like to select a non-default keyboard layout for the virtual console?" || set_vcons_kl
+    ask_y_n "Would you like to select a non-default keyboard layout for the virtual console?" && set_vcons_kl
 
     msg -e "\nSelect, a hostname next. In line with RFC 1178, a hostname should only include
 lowercase letters, digits and dashes (but not at the beginning)."
