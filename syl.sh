@@ -317,7 +317,7 @@ For this, we will open it using the application set as \$EDITOR."
 
 mount_system() {
     local root efi
-    root="$(get_config_var ROOT_PARTITION)"
+    root="/dev/mapper/$(get_config_var ROOT_ENCRYPTED_NAME)"
     efi="$(get_config_var EFI_PARTITION)"
     declare -A mounts
     mounts[@]=/mnt
