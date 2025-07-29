@@ -67,8 +67,10 @@ set_hostname() {
     local hostname
     while true; do
         read -rp "  Please type in a hostname: " hostname
+        test -z "$hostname" && continue
         hostname="$(echo -n "$hostname" | tr -dc '[:alnum:]' | tr '[:upper:]' '[:lower:]')"
-        hostname="${hostname/-/}"
+        hostname="${hostname/#-/}"
+        hostname="${hostname:0:63}"
         msg "Adapted to adhere to RFC 1178, this is your hostname: $hostname"
         ask_y_n "Would you like to continue with this name?" && break
     done
@@ -105,7 +107,7 @@ MulticastDNS" > "$custom"
 
 create_net_dropin() {
     local dropin_folder
-    dropin_folder=/mnt/etc/systemd/network/"$1".d
+    dropin_folder=/mnt/etc/systemd/network/"$(basename "$1")".d
     mkdir -p "$dropin_folder"
     cp "$2" "$dropin_folder"/10-custom.conf
 }
@@ -154,7 +156,7 @@ nameserver 127.0.0.1
 options edns0" >> /mnt/etc/resolv.conf
 
 
-    msg "Enabling required systemd services..."
+    msg -e "\nEnabling required systemd services..."
     achroot systemctl enable systemd-networkd.service || exit 1
     achroot systemctl enable dnscrypt-proxy.service || exit 1
     if [ -n "$wifi_serv" ]; then
@@ -173,11 +175,11 @@ For this, we will open it using the application set as \$EDITOR."
         pause
         while true; do
             $EDITOR /mnt/etc/fstab
-            ask_y_n "Would you like to continue? (Replying no will reopen the fstab file. Press Ctrl-C to exit.)" && break
+            ask_y_n "Would you like to continue? (Replying No will reopen the fstab file. Press Ctrl-C to exit.)" && break
         done
     fi
 
-    msg -e "\nNext, we'll set up time. Please note that your system's hardware clock needs to be set to UTC for this to work correctly."
+    msg -e "\nNext, we'll cover time settings. Please note that your system's hardware clock needs to be set to UTC for this to work correctly."
     ask_y_n "Would you like to continue?" continue skip && set_time
 
     msg -e "\nNow, locale settings."

@@ -356,9 +356,9 @@ During this process, the following options can be customized:
 	- locale
 	- supported network interfaces
 
-This includes quite a few steps and you will be asked to skip any of them in
-case you have already completed them manually. If you have not, skipping any
-step may result in unexpected side effects."
+This includes quite a few steps and you will be offered to skip any of them in
+case you have already completed them manually. If you have not, skipping a step
+may result in unexpected side effects."
             ask_for_skip && prepare_system
             ;;
     esac
