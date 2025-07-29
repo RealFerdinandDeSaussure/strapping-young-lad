@@ -31,7 +31,6 @@ Please provide a value for this setting below. Be aware that provided values wil
         read -rp "  $1> " val
         config_vars["$1"]="$val"
     fi
-    echo -n "$val"
 }
 
 msg_bold() {
@@ -256,8 +255,10 @@ select_item() {
 
 mount_system() {
     local root efi
-    root="/dev/mapper/$(get_config_var ROOT_ENCRYPTED_NAME)"
-    efi="$(get_config_var EFI_PARTITION)"
+    get_config_var ROOT_ENCRYPTED_NAME
+    root="/dev/mapper/${config_vars[ROOT_ENCRYPTED_NAME]}"
+    get_config_var EFI_PARTITION
+    efi="${config_vars[EFI_PARTITION]}"
     declare -A mounts
     mounts[@]=/mnt
     mounts[@home]=/mnt/home
@@ -274,8 +275,10 @@ mount_system() {
 
 test_system_mounted() {
     local root root_query efi_query
-    root="/dev/mapper/$(get_config_var ROOT_ENCRYPTED_NAME)"
-    efi="$(get_config_var EFI_PARTITION)"
+    get_config_var ROOT_ENCRYPTED_NAME
+    root="/dev/mapper/${config_vars[ROOT_ENCRYPTED_NAME]}"
+    get_config_var EFI_PARTITION
+    efi="${config_vars[EFI_PARTITION]}"
     root_query="SOURCE =~ \"$root\" && TARGET == \"/mnt\""
     efi_query="SOURCE == \"$efi\" && TARGET == \"/mnt/boot\""
 

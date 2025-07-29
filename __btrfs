@@ -1,7 +1,8 @@
 # -*-bash-ts-*-
 setup_root() {
     local root
-    root="/dev/mapper/$(get_config_var ROOT_ENCRYPTED_NAME)"
+    get_config_var ROOT_ENCRYPTED_NAME
+    root="/dev/mapper/${config_vars[ROOT_ENCRYPTED_NAME]}"
 
     format_part_btrfs "$root" "$(basename "$root")"
     create_subvols "$root"

@@ -20,7 +20,7 @@ Now let's get started."
 }
 
 get_part_parent() {
-    lsblk -rnpo "$1" | head -n1
+    lsblk -rnpo PKNAME "$1" | head -n1
 }
 
 setup_parts() {
@@ -76,7 +76,8 @@ setup_parts() {
 encrypt_parts() {
     # very simple at this point but maybe in the future other partition schemes
     # will be supported
-    encrypt_p "$(get_config_var ROOT_PARTITION)" cryptroot
+    get_config_var ROOT_PARTITION
+    encrypt_p "${config_vars[ROOT_PARTITION]}" cryptroot
     config_vars[ROOT_ENCRYPTED_NAME]="cryptroot"
 }
 
@@ -138,7 +139,8 @@ create_efi_part() {
 
 parse_part_size() {
     local size unit disk
-    disk="$(get_config_var INSTALL_DISK)"
+    get_config_var INSTALL_DISK
+    disk="${config_vars[INSTALL_DISK]}"
 
     if [[ "$1" == "0" ]]; then
         get_largest_empty_blk "$disk"
