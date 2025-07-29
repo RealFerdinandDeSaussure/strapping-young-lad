@@ -77,6 +77,7 @@ encrypt_parts() {
 }
 
 encrypt_p() {
+    set +x  # Disable shell tracing so password values don't get leaked
     local part crypt_part pw pw_bckp
     part="$1"
     crypt_part="$2"
@@ -93,9 +94,9 @@ encrypt_p() {
     msg -e "\nEncrypting partition at $part. THIS WILL IRREVOCABLY DESTROY ALL DATA ON $part."
     ask_y_n "Are you sure you want to continue?" || exit 1
 
-    cryptsetup luksFormat --key-file - "$part" <<< "$pw" || exit 1
+    (printf "%s" "$pw" | cryptsetup luksFormat --key-file - "$part") || exit 1
     msg "Mapping unlocked partition $part to $crypt_part..."
-    cryptsetup open --key-file - "$part" "$crypt_part" <<< "$pw" || exit 1
+    (printf "%s" "$pw" | cryptsetup open --key-file - "$part" "$crypt_part") || exit 1
 }
 
 get_lowest_part_num() {
