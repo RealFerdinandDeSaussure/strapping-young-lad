@@ -349,7 +349,8 @@ also choose additional packages to be installed."
             ;;
         6)
             msg_bold "STEP SIX: Setting up the system"
-            msg "Now, we will setup the system so that it becomes bootable.
+            msg "Now, we will make some changes to the bootstrapped system that ensure basic
+functionality.
 During this process, the following options can be customized:
 	- the fstab file
 	- system clock and time settings
@@ -361,6 +362,9 @@ case you have already completed them manually. If you have not, skipping a step
 may result in unexpected side effects."
             ask_for_skip && prepare_system
             ;;
+        7)
+            msg_bold "STEP SEVEN: Making the system bootable
+Yes, what it says in the headline. We will create a unified kernel image"
     esac
     msg ""
 }

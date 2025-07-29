@@ -197,4 +197,7 @@ lowercase letters, digits and dashes (but not at the beginning)."
     msg -e "\nFor network access on the new system, we will use systemd-networkd and
 optionally iwd for wireless access."
     ask_y_n "Would you like to continue?" continue skip && setup_network
+
+    msg -e "\nFinally, we will run passwd on the new system to set its root password."
+    ask_y_n "Would you like to continue?" continue skip && achroot passwd
 }
