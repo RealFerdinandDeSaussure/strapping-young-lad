@@ -104,17 +104,17 @@ MulticastDNS" > "$custom"
 }
 
 create_net_dropin() {
-    local dropin
-    dropin="/tmp/$(basename "$2")"
-
-    achroot "networkctl edit \"$1\" --drop-in custom --stdin < \"$dropin\"" || exit 1
+    local dropin_folder
+    dropin_folder /mnt/etc/systemd/network/"$1".d
+    mkdir -p "$dropin_folder"
+    cp "$2" "$dropin_folder"/10-custom.conf
 }
 
 setup_network() {
     local eth_serv wifi_serv eth_custom wifi_custom
     declare -a ex
-    eth_custom=/mnt/tmp/eth_custom.tmp
-    wifi_custom=/mnt/tmp/wifi_custom.tmp
+    eth_custom="$(mktemp)"
+    wifi_custom="$(mktemp)"
 
     ask_y_n "Would you like to configure wired network access?" && eth_serv="$(create_netservice ethernet "$eth_custom")"
     if ask_y_n "Would you like to configure wireless network access?"; then
