@@ -105,7 +105,7 @@ MulticastDNS" > "$custom"
 
 create_net_dropin() {
     local dropin_folder
-    dropin_folder /mnt/etc/systemd/network/"$1".d
+    dropin_folder=/mnt/etc/systemd/network/"$1".d
     mkdir -p "$dropin_folder"
     cp "$2" "$dropin_folder"/10-custom.conf
 }
@@ -162,33 +162,35 @@ options edns0" >> /mnt/etc/resolv.conf
     fi
 }
 
-system_prepare() {
-    msg "Generating fstab..."
-    genfstab -U /mnt >> /mnt/etc/fstab || exit 1
-    msg "The fstab file was successfully created. However, it is recommended to check it manually for errors.
+prepare_system() {
+    msg "First, we will generate the file system table."
+    if ask_y_n "Would you like to continue?" continue skip; then
+        genfstab -U /mnt >> /mnt/etc/fstab || exit 1
+        msg "The fstab file was successfully created. However, it is recommended to check it manually for errors.
 For this, we will open it using the application set as \$EDITOR."
-    pause
-    $EDITOR /mnt/etc/fstab
-    ask_y_n "Would you like to continue? (Replying no will exit the script.)" || exit
+        pause
+        while true; do
+            $EDITOR /mnt/etc/fstab
+            ask_y_n "Would you like to continue? (Replying no will reopen the fstab file. Press Ctrl-C to exit.)" && break
+        done
+    fi
 
     msg -e "\nNext, we'll set up time. Please note that your system's hardware clock needs to be set to UTC for this to work correctly."
-    pause
-    set_time
+    ask_y_n "Would you like to continue?" continue skip && set_time
 
     msg -e "\nNow, locale settings."
-    set_locales
+    ask_y_n "Would you like to continue?" continue skip && set_locales
 
     msg -e "\nIf you are using a keyboard layout other than the default US one, you can set
-it for the virtual console. This will most likely not affect the keyboard
-settings in a desktop environment."
-    ask_y_n "Would you like to select a non-default keyboard layout for the virtual console?" && set_vcons_kl
+it as the default layout for the virtual console. This will most likely not
+affect the keyboard settings in a desktop environment."
+    ask_y_n "Would you like to continue with setting a custom keyboard layout for the virtual console?" continue skip && set_vcons_kl
 
     msg -e "\nSelect, a hostname next. In line with RFC 1178, a hostname should only include
 lowercase letters, digits and dashes (but not at the beginning)."
-    set_hostname
+    ask_y_n "Would you like to continue?" continue skip && set_hostname
 
     msg -e "\nFor network access on the new system, we will use systemd-networkd and
 optionally iwd for wireless access."
-    pause
-    setup_network
+    ask_y_n "Would you like to continue?" continue skip && setup_network
 }

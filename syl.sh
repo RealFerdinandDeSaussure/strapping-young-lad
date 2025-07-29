@@ -117,13 +117,16 @@ test_tpm() {
 
 ask_y_n() {
     local choice choice_len yes no return
-    yes=yes
-    no=no
+    # custom yes/no values can be passed but should always be lowercase
+    yes="$2"
+    test -z "$yes" && yes=yes
+    no="$3"
+    test -z "$no" && no=no
     choice_len=1
 
     while [ -z "$return" ]; do
         msg_bold -n "  $1 "
-        read -rp "[Yes/No] " choice
+        read -rp "[${yes@u}/${no@u}] " choice
         test -n "$choice" && choice_len=${#choice}
         test "$choice_len" -eq 0 && continue
         choice="$(echo "$choice" | xargs | tr "[:upper:]" "[:lower:]")"
@@ -185,7 +188,7 @@ bootstrap() {
     fi
 
     while true; do
-        read -rp "Please enter the name of your desired kernel package (default: linux): " kernel
+        read -rp "  Please enter the name of your desired kernel package (default: linux): " kernel
         test -z "$kernel" && kernel=linux
 
         kernel="$(echo -n "$kernel" | xargs)"
@@ -200,7 +203,7 @@ bootstrap() {
 
     msg ""
     while true; do
-        read -rp "Please enter additional packages separated by spaces here (default: none): " choice
+        read -rp "  Please enter additional packages separated by spaces here (default: none): " choice
         read -ra pkgs <<< "$choice"
 
         no_pkgs=()
@@ -336,8 +339,12 @@ During this process, the following options can be customized:
 	- the fstab file
 	- system clock and time settings
 	- locale
-	- supported network interfaces"
-            ask_for_skip && system_prepare
+	- supported network interfaces
+
+This includes quite a few steps and you will be asked to skip any of them in
+case you have already completed them manually. If you have not, skipping any
+step may result in unexpected side effects."
+            ask_for_skip && prepare_system
             ;;
     esac
     msg ""
