@@ -11,7 +11,7 @@ man_config_vars[ROOT_PARTITION]="Path to the partition where the root folder of 
 man_config_vars[ROOT_ENCRYPTED_NAME]="Name of the mapping for the unlocked encrypted root partition."
 
 SCRIPT_DIR="$(dirname "$0")"
-STEPS=6
+STEPS=7
 
 # shellcheck source=./*
 for i in "$SCRIPT_DIR/"__*; do
@@ -352,10 +352,10 @@ also choose additional packages to be installed."
             msg "Now, we will make some changes to the bootstrapped system that ensure basic
 functionality.
 During this process, the following options can be customized:
-	- the fstab file
-	- system clock and time settings
-	- locale
-	- supported network interfaces
+    - the fstab file
+    - system clock and time settings
+    - locale
+    - supported network interfaces
 
 This includes quite a few steps and you will be offered to skip any of them in
 case you have already completed them manually. If you have not, skipping a step
@@ -364,23 +364,38 @@ may result in unexpected side effects."
             ;;
         7)
             msg_bold "STEP SEVEN: Making the system bootable
-Yes, what it says in the headline. We will create a unified kernel image"
+Yes, what it says in the headline. We will install a bootloader (systemd-boot),
+create a unified kernel image and create a boot entry for it. Optionally, we can
+also create a boot entry for Windows."
+            ask_for_skip && make_bootable
+            ;;
     esac
     msg ""
 }
 # --- end functions
 
 if ! (return 0 2>/dev/null); then
-    if [ -z "$1" ]; then
-        start=1
-        msg -e "
+    case "$1" in
+        "")
+            start=1
+            msg -e "
 -----------------------------------
 Greetings! Let's install \033[34mArchLinux\033[0m!
 -----------------------------------
 "
-    else
-        start="$1"
-    fi
+            ;;
+        [0-9]*)
+            if [ "$1" -gt "$STEPS" ]; then
+                msg "There is no step $1."
+                exit 1
+            fi
+            start="$1"
+            ;;
+        *)
+            msg "Invalid argument: $1"
+            exit 1
+            ;;
+    esac
 
     test_root || exit 1
     test_uefi || exit 1
