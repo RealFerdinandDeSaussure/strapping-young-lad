@@ -21,7 +21,7 @@ set_time() {
     city=$(select_item "${items[@]}")
 
     msg "Setting $region/$city as local time..."
-    ln -sf "/mnt/usr/share/zoneinfo/$region/$city" /mnt/etc/localtime || exit 1
+    achroot ln -sf "/usr/share/zoneinfo/$region/$city" /etc/localtime || exit 1
 
     msg "Setting up /etc/adjtime so the system will not modify the hardware clock..."
     achroot hwclock --systohc || exit 1
@@ -95,7 +95,7 @@ create_netservice() {
     msg "Creating link to $base service file..."
     ex=(/mnt/usr/lib/systemd/network/*-"$base".network.example)
     service="$(basename "${ex[0]/%.example/}")"
-    ln -vfs "${ex[0]}" /mnt/etc/systemd/network/"$service" || exit 1
+    achroot ln -vfs "${ex[0]/#\/mnt/}" /etc/systemd/network/"$service" >&2 || exit 1
     echo "[Link]
 Multicast=yes
 RequiredForOnline=routable
@@ -107,7 +107,7 @@ MulticastDNS" > "$custom"
 
 create_net_dropin() {
     local dropin_folder
-    dropin_folder=/mnt/etc/systemd/network/"$(basename "$1")".d
+    dropin_folder=/mnt/etc/systemd/network/"$1".d
     mkdir -p "$dropin_folder"
     cp "$2" "$dropin_folder"/10-custom.conf
 }
