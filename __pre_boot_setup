@@ -173,10 +173,7 @@ prepare_system() {
         msg "The fstab file was successfully created. However, it is recommended to check it manually for errors.
 For this, we will open it using the application set as \$EDITOR."
         pause
-        while true; do
-            $EDITOR /mnt/etc/fstab
-            ask_y_n "Would you like to continue? (Replying No will reopen the fstab file. Press Ctrl-C to exit.)" && break
-        done
+        edit_file /mnt/etc/fstab
     fi
 
     msg -e "\nNext, we'll cover time settings. Please note that your system's hardware clock needs to be set to UTC for this to work correctly."
@@ -200,4 +197,169 @@ optionally iwd for wireless access."
 
     msg -e "\nFinally, we will run passwd on the new system to set its root password."
     ask_y_n "Would you like to continue?" continue skip && achroot passwd
+}
+
+adapt_hooks() {
+    local hooks sdv_hook
+    declare -a microcode
+    hooks="$(grep '^HOOKS' "$1")"
+
+    ask_y_n "Will you be using a non-standard keymap or console font?" && sdv_hook="sd-vconsole"
+
+    msg -e "\nNow would also be good time to install a microcode package as it can be loaded
+by a mkinitcpio hook as well."
+    if ask_y_n "Would you like to install a microcode package?"; then
+        while IFS='' read -r line; do
+            microcode+=("$line")
+        done < <(pacman -Ssq -- -ucode)
+        achroot pacman -Sy --needed "$(select_item "${microcode[@]}")"
+        grep -q microcode <<< "$hooks" || hooks="${hooks/autodetect/autodetect microcode}"
+    fi
+
+    # remove udev as it is supplanted by systemd hook
+    grep -q udev <<< "$hooks" && hooks="${hooks/udev /}"
+    grep -q systemd <<< "$hooks" || hooks="${hooks/autodetect/systemd autodetect}"
+    grep -q keyboard <<< "$hooks" || hooks="${hooks/block/keyboard block}"
+    test -n "$sdv_hook" && grep -q "$sdv_hook" <<< "$hooks" || hooks="${hooks/block/$sdv_hook block}"
+    grep -q sd-encrypt <<< "$hooks" || hooks="${hooks/filesystems/sd-encrypt filesystems}"
+
+    sed -i 's/^HOOKS=.*/'"$hooks"'/' "$1" || exit 1
+}
+
+generate_kcmdline() {
+    local gpt_automount efi root cmdline
+    efi="$(get_config_var EFI_PARTITION)"
+    root="$(get_config_var ROOT_PARTITION)"
+    cryptroot="$(get_config_var ROOT_ENCRYPTED_NAME)"
+
+    msg -e "\nNext, we will generate the kernel command line, which will be integrated into the UKI."
+
+    if [ "$(get_part_parent "$efi")" = "$(get_part_parent "$root")" ]; then
+        msg -e "systemd supports automounting the root partition (others too but for those we are using subvolumes), which makes things easier to maintain in the long run.
+The encrypted partition will be provided as /dev/gpt-auto-root-luks, the
+unlocked root partition as /dev/gpt-auto-root.
+These are the requirements for automounting support:
+	- using a systemd initramfs
+	- the root and EFI partition must be on the same device
+	- the correct GPT partition types must be set
+	- the bootloader must support it
+
+By following this script, all the criteria should have been met. Nevertheless, you can still choose to specify the root partition explicitly."
+        if ask_y_n "Would you like to use GPT automounting?"; then
+            gpt_automount=1
+        else
+            gpt_automount=0
+        fi
+        config_vars[GPT_AUTOMOUNT]=$gpt_automount
+    fi
+   
+    msg -e "\nBefore looking at the generated file, here's an overview of the kernel
+options included:"
+    test $gpt_automount = 0 && msg "	- root: the root partition (i.e. the mapping of the unlocked cryptdevice)"
+    msg "	- rootflags: options for mounting the root partitions - for our setup, this
+                 is important as this is where we specify the subvolume
+	- rw: read/write access (this is required for the root partition)
+	- quiet: suppress output when booting
+	- bgrt_disable: suppress display of the OEM logo"
+    pause
+    cmdline="rw quiet bgrt_disable"
+    test $gpt_automount = 0 && cmdline="root=/dev/mapper/$cryptroot $cmdline"
+    echo "$cmdline" > /mnt/etc/kernel/cmdline
+    edit_file /mnt/etc/kernel/cmdline
+}
+
+create_crypttab_initramfs() {
+    local gpt_automount root root_entry
+    gpt_automount="$(get_config_var GPT_AUTOMOUNT)"
+    root="$(get_config_var ROOT_PARTITION)"
+
+    msg -e "\nThe last step for creating an UKI is setting up crypttab.initramfs. This is a
+crypttab file that will be added to the UKI and will be used to unlock the
+encrypted devices listed in it."
+
+    if [ "$gpt_automount" = 1 ]; then
+        msg "As you have set up automounting, you can entirely ignore this file. However, if
+you wish to set up additional unlock methods, crypttab.initramfs is a good place
+to do that (the other place would be the kernel commandline)."
+        ask_y_n "Would you like to make use of crypttab.initramfs?" || return
+    fi
+
+    if [ "$gpt_automount" = 1 ]; then
+        root_entry="  cryptroot    /dev/gpt-auto-root-luks    none"
+    else
+        root_entry="  cryptroot    UUID=$(lsblk -no UUID "$root")    none"
+    fi
+
+    echo "$root_entry" >> /mnt/etc/crypttab.initramfs
+    edit_file /mnt/etc/crypttab.initramfs
+    # option for crypttab.initramfs (fido2)
+}
+
+setup_mkinitcpio() {
+    local BINARIES mkcp_conf hooks uki_folder
+    mkcp_conf="$(mktemp)"
+    
+    msg -e "\nAlright then, first, we will add additional hooks to the mkinitcpio config.
+These are required for unlocking the root partition at boot time. If you are
+using a non-US console keymap or a non-default console font (you aren't if you
+have only been following this script so far), we also need to add the
+sd-vconsole hook.
+
+Additionally, we will be adding the btrfs binary to the initial ramdisk so we
+have access to it in emergency mode."
+    cp /mnt/etc/mkinitcpio.conf "$mkcp_conf"
+
+    source <(grep "^BINARIES" "$mkcp_conf")
+    BINARIES+=("btrfs")
+    sed -i 's/^BINARIES=.*/BINARIES='"${BINARIES[*]}"'/' "$mkcp_conf" || exit 1
+
+    adapt_hooks "$mkcp_conf"
+
+    msg -e "\nLet's have a look at the edited mkinitcpio.conf. Check it for errors and make
+additional edits if desired."
+    pause
+    edit_file "$mkcp_conf"
+
+    msg -e "\nNow, we will edit the mkinitcpio preset file(s). Not much custom input should be
+required here. You can comment out the default_options line (the default) if you
+would like to suppress the splash boot image."
+
+    for p in /mnt/etc/mkinitcpio.d/*.preset; do
+        msg "Editing $p..."
+        pause
+        for i in default_uki fallback_uki default_options; do
+            sed -ri 's/^#('"${i}"'=)/\1/' "$p" || exit 1
+        done
+        edit_file "$p"
+    done
+
+    generate_kcmdline
+
+    create_crypttab_initramfs
+
+    msg -e "\nNow let's create our unified kernel image(s)."
+    for p in /mnt/etc/mkinicpio.d/*.preset; do
+        uki_folder="$(grep '^default_uki=' "$p" | cut -d= -f2)"
+        if [ -z "$uki_folder" ]; then
+            msg "Error! No definition for \"default_uki\" found in $p."
+            exit 1
+        fi
+        mkdir -p "$(dirname "$uki_folder")" || exit 1
+        mkinitcpio -p "$(basename -s ".preset" "$p")" || exit 1
+    done
+}
+
+make_bootable() {
+    test_system_mounted || exit 1
+
+    msg "First, we will create a unified kernel image (UKI). This requires adapting
+the configuration and preset files for mkinitcpio and customizing the kernel
+command line. This script should take care of most of the work but each file
+will be opened with a text editor (\$EDITOR) so you can make custom
+adjustments.
+One thing to note is that we will be using a systemd base initramfs. ArchLinux
+by default uses busybox but using systemd gives us access to a couple of handy
+extenstions during the boot process."
+
+    setup_mkinitcpio
 }

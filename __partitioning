@@ -16,7 +16,11 @@ Without any of these qualifiers at the end, values will be considered sectors of
 The value 0 means the largest continuously empty block on the disk (most of the time, this is equivalent to the remaining empty space).
 
 Now let's get started."
-    create_part "$disk" "root" "0"
+    create_part "$disk" "root" "0" "8304"
+}
+
+get_part_parent() {
+    lsblk -rnpo "$1" | head -n1
 }
 
 setup_parts() {
@@ -208,6 +212,9 @@ create_part() {
     disk=$1
     type=$2
     default=$3
+
+    declare -a guid
+
     while true; do
         read -rp "  Please provide the desired size of partition '$type' (default: $default): " val
         test -z "$val" && val="$default"
@@ -223,7 +230,8 @@ create_part() {
     part_num="$(get_lowest_part_num "$disk")"
     start_sec="$(sgdisk -F "$disk")" || exit 1
     end_sec=$(("$start_sec" + "$size"))
-    sgdisk -n "$part_num":"$start_sec":"$end_sec" "$disk" || exit 1
+    test -n "$4" && guid=("-t" "$part_num:$4")
+    sgdisk -n "$part_num":"$start_sec":"$end_sec" "$disk" ${guid[*]} || exit 1
     echo "$type partition created."
 
     part="$disk$part_num"

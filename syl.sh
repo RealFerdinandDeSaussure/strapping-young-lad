@@ -7,8 +7,9 @@ declare -A man_config_vars
 
 man_config_vars[INSTALL_DISK]="Path to the block device that holds or should hold partitions for the installation."
 man_config_vars[EFI_PARTITION]="Path to the EFI system partition."
-man_config_vars[ROOT_PARTITION]="Path to the partition where the root folder of the system will reside."
+man_config_vars[ROOT_PARTITION]="Path to the partition that will be used for hosting all system files."
 man_config_vars[ROOT_ENCRYPTED_NAME]="Name of the mapping for the unlocked encrypted root partition."
+man_config_vars[GPT_AUTOMOUNT]="Whether the root partition should be mounted automatically by systemd (0=no, 1=yes)."
 
 SCRIPT_DIR="$(dirname "$0")"
 STEPS=7
@@ -49,6 +50,13 @@ msg() {
         shift
     done
     echo -e $args "$1" >&2
+}
+
+edit_file() {
+    while true; do
+        $EDITOR "$1" || exit 1
+        ask_y_n "Would you like to continue? (Replying No will reopen the file. Press Ctrl-C to exit.)" && break
+    done
 }
 
 pause() {
