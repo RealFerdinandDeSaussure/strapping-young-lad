@@ -126,7 +126,7 @@ create_efi_part() {
 
     part="${1}$part_num"
     test_part "$part" || exit 1
-    config_vars["EFI_PARTITION"]="$part"
+    config_vars[EFI_PARTITION]="$part"
 
     mkfs.fat -F 32 "$part" >/dev/null || exit 1
     msg "EFI partition formatted."
@@ -190,6 +190,7 @@ test_efi_part() {
 
     if [ -n "$efi_part" ]; then
         msg_bold "Yes."
+        config_vars[EFI_PARTITION]="$efi_part"
         return
     else
         msg_bold "No."

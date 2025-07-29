@@ -163,6 +163,8 @@ options edns0" >> /mnt/etc/resolv.conf
 }
 
 prepare_system() {
+    test_system_mounted || exit 1
+
     msg "First, we will generate the file system table."
     if ask_y_n "Would you like to continue?" continue skip; then
         genfstab -U /mnt >> /mnt/etc/fstab || exit 1

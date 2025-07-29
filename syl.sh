@@ -182,10 +182,7 @@ get_largest_empty_blk_in_m() {
 
 bootstrap() {
     local kernel choice pkgs no_pkgs
-    if ! findmnt /mnt >/dev/null; then
-        msg "Nothing mounted at /mnt. Can't continue."
-        exit 1
-    fi
+    test_system_mounted || exit 1
 
     while true; do
         read -rp "  Please enter the name of your desired kernel package (default: linux): " kernel
@@ -267,6 +264,24 @@ mount_system() {
     mount --mkdir "$efi" /mnt/boot
 }
 
+test_system_mounted() {
+    local root root_query efi_query
+    root="/dev/mapper/$(get_config_var ROOT_ENCRYPTED_NAME)"
+    efi="$(get_config_var EFI_PARTITION)"
+    root_query="SOURCE =~ \"$root\" && TARGET == \"/mnt\""
+    efi_query="SOURCE == \"$efi\" && TARGET == \"/mnt/boot\""
+
+    if [ -z "$(findmnt -Q "$root_query")" ]; then
+        msg -e "\n$root is not mounted at /mnt. Mount your system first before continuing."
+        return 1
+    elif [ -z "$(findmnt -Q "$efi_query")" ]; then
+        msg -e "\nEFI partition $efi not mounted at /mnt/boot. Mount it first before continuing."
+        return 1
+    else
+        return 0
+    fi
+}
+
 step() {
     msg ""
 
@@ -276,7 +291,7 @@ step() {
             msg "Specify a disk with unpartitioned disk space. It will be formatted and the
 following partitions will be created on it:
 	- an EFI system partition of size 1G if one does not exist already
-	- a root partition formatted with btrfs"
+	- an unformatted root partition"
             ask_for_skip && setup_parts
             ;;
         2)
