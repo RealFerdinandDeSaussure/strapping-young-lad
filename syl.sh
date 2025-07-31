@@ -40,7 +40,7 @@ set_config_var_root_partition() {
 # --- functions
 get_config_var() {
     local setter val
-    setter="set_config_var_${1@l}"
+    setter="set_config_var_${1@L}"
 
     if declare -F "$setter"; then
         config_vars["$1"]=$($setter)
@@ -213,8 +213,36 @@ get_largest_empty_blk_in_m() {
     echo -n "$(($(get_largest_empty_blk "$1") * 512 / 1000000))"
 }
 
+prompt_for_extra_pkgs() {
+    declare -a pkgs
+    msg "
+Please answer the following questions. The package that will be installed if you
+answer 'Yes' is given in parentheses for each question."
+
+    for cpu in amd intel; do
+        if ask_y_n "Does your computer run on an $cpu CPU ($cpu-ucode)?"; then
+            pkgs+=("$cpu-ucode")
+        fi
+    done
+    ask_y_n "Do you want to use a wireless connection on the system (iwd)?" && pkgs+=("iwd")
+    ask_y_n "Do you want to encrypt the DNS queries made by the system (dnscrypt-proxy)?"
+
+    echo -n "${pkgs[*]}"
+}
+
+get_missing_pkgs() {
+    declare -a no_pkgs
+    mapfile -t pkgs <<< "$1"
+
+    for p in "${pkgs[@]}"; do
+        pacman -Si "$p" >/dev/null 2>&1 || no_pkgs+=("$p")
+    done
+    echo -n "${no_pkgs[*]}"
+}
+
 bootstrap() {
-    local kernel choice pkgs no_pkgs
+    local kernel choice
+    declare -a pkgs no_pkgs
     test_system_mounted || exit 1
 
     while true; do
@@ -222,33 +250,20 @@ bootstrap() {
         test -z "$kernel" && kernel=linux
 
         kernel="$(echo -n "$kernel" | xargs)"
-        if [ "$kernel" = "linux" ]; then
-            break
-        elif pacman -Syi "$kernel" >/dev/null 2>&1; then
-             break
-        else
-            msg "Kernel package '$kernel' not found."
-        fi
+        test -n "$(get_missing_pkgs "$kernel")" && break
+        msg "Kernel package '$kernel' not found."
     done
+
+    pkgs+=($(prompt_for_extra_pkgs))
 
     msg ""
     while true; do
         read -rp "  Please enter additional packages separated by spaces here (default: none): " choice
         read -ra pkgs <<< "$choice"
-
-        no_pkgs=()
-        for p in "${pkgs[@]}"; do
-            pacman -Si "$p" >/dev/null 2>&1 || no_pkgs+=("$p")
-        done
-
-        if [ "${#no_pkgs[@]}" -eq 0 ]; then
-            break
-        else
-            msg -e "The following packages could not be found:"
-            for n in "${no_pkgs[@]}"; do
-                echo "- $n"
-            done
-        fi
+        no_pkgs=($(get_missing_pkgs "$pkgs"))
+        test -z "${no_pkgs[*]}" && break
+        msg "The following packages could not be found:"
+        printf "- %s\n" "${no_pkgs[@]}"
     done
 
     msg "\nBootstrapping a base system with the following packages: base $kernel linux-firmware ${pkgs[*]}..."
@@ -409,8 +424,9 @@ Should any of the mountpoints not exist, they will be created."
             msg "Now, we will bootstrap the system by coping a base ArchLinux install to the
 prepared system. Normally, this base system will consist of three packages:
 base, linux and linux-firmware.
-If you wish, you can switch out 'linux' with a different kernel package. You may
-also choose additional packages to be installed."
+We will also install a couple of extra packages that may be relevant to you
+later on. If you wish, you can switch out 'linux' with a different kernel
+package. You may also specify additional packages yourself."
             ask_for_skip && bootstrap
             ;;
         6)
@@ -435,6 +451,12 @@ may result in unexpected side effects."
 installation process as errors made here can result in an unbootable system."
             ask_for_skip && make_bootable
             ;;
+        8)
+            msg_bold "STEP EIGHT: Copying the script to the new system"
+            msg "At this point, the system should be bootable. Before we will boot into it, we
+will clone this script's git repository to the new system's root folder so we
+can continue with the stup process after booting into the new system."
+            ask_for_skip && prepare_for_reboot
     esac
     msg ""
 }
@@ -444,9 +466,9 @@ if ! (return 0 2>/dev/null); then
     case "$1" in
         "")
             start=1
-            msg -e "
+            msg_bold -e "\033[37m
 -----------------------------------
-Greetings! Let's install \033[34mArchLinux\033[0m!
+Greetings! Let's install \033[34mArchLinux\033[37m!
 -----------------------------------
 "
             ;;

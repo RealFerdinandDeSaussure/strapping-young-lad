@@ -2,9 +2,12 @@
 create_parts() {
     local disk
     disk="$1"
-    msg -e "\nBefore we start, let's have a look at the current partition table:\n"
+    msg "
+Before we start, let's have a look at the current partition table:
+"
     sgdisk -p "$disk" || exit 1
-    msg -e "\nPartitions created by this script will always use the largest continuous block
+    msg "
+Partitions created by this script will always use the largest continuous block
 of empty space available.
 If the partition table is heavily fragmented, you should repartition it
 manually."
@@ -12,7 +15,8 @@ manually."
 1000000)) Megabyte.
 The total size of the largest continuous block of empty space is roughly
 $(get_largest_empty_blk_in_m "$disk") Megabyte."
-    msg -e "\nWhen providing partition sizes, you can either give values ending in G(igabyte),
+    msg "
+When providing partition sizes, you can either give values ending in G(igabyte),
 M(egabyte) or %(=percentage of total disk space.)
 Without any of these qualifiers at the end, values will be considered sectors of
 512-byte size.
@@ -77,7 +81,8 @@ setup_parts() {
     esac
 
     if [ -n "$(findmnt -Q 'SOURCE =~ "'"${disk}"'[0-9]+"')" ]; then
-        msg -e "\nPartitions of $disk are currently mounted. Unmount them before proceeding."
+        msg "
+Partitions of $disk are currently mounted. Unmount them before proceeding."
         exit 1
     fi
 
@@ -107,7 +112,8 @@ encrypt_p() {
         msg "Passwords do not match. Please try again."
     done
 
-    msg -e "\nEncrypting partition at $part. THIS WILL IRREVOCABLY DESTROY ALL DATA ON $part."
+    msg "
+Encrypting partition at $part. THIS WILL IRREVOCABLY DESTROY ALL DATA ON $part."
     ask_y_n "Are you sure you want to continue?" || exit 1
 
     (printf "%s" "$pw" | cryptsetup luksFormat --key-file - "$part") || exit 1

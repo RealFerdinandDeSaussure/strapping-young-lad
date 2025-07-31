@@ -17,7 +17,8 @@ set_time() {
     for i in /mnt/usr/share/zoneinfo/"$region"/[A-Z]*; do
         test -f "$i" && items+=("$(basename "$i")")
     done
-    msg -e "\nNow, select a city:"
+    msg "
+Now, select a city:"
     city=$(select_item "${items[@]}")
 
     msg "Setting $region/$city as local time..."
@@ -55,7 +56,8 @@ Only UTF-8 locales are supported by this script."
     achroot locale-gen || exit 1
 
     items=()
-    msg -e "\nChoose the system locale among the ones you previously selected."
+    msg "
+Choose the system locale among the ones you previously selected."
     while read -r line; do
         items+=("$line")
     done < <(sed -rn 's/^([^#]\S+).+/\1/p' /mnt/etc/locale.gen)
@@ -119,10 +121,9 @@ setup_network() {
     wifi_custom="$(mktemp)"
 
     ask_y_n "Would you like to configure wired network access?" && eth_serv="$(create_netservice ethernet "$eth_custom")"
-    if ask_y_n "Would you like to configure wireless network access?"; then
+    if achroot pacman -Q iwd >/dev/null 2>&1; then
         wifi_serv="$(create_netservice wifi-station "$wifi_custom")"
         echo "IgnoreCarrierLoss=3s" >> "$wifi_custom"
-        achroot pacman -Sy --needed iwd || exit 1
     fi
 
     test -z "$eth_serv$wifi_serv" && return
@@ -137,7 +138,8 @@ RouteMetric=100 " >> "$c"
         done
     fi
 
-    msg -e "\nThere are a couple of improvements over the basic systemd provided network files
+    msg "
+There are a couple of improvements over the basic systemd provided network files
 that can be set up in addition. These include:
     - Multicast/MulticastDNS support
     - making systemd wait for a routable IP address
@@ -148,17 +150,18 @@ that can be set up in addition. These include:
         test -n "$wifi_serv" && create_net_dropin "$wifi_serv" "$wifi_custom"
     fi
 
-    msg "Installing and setting up dnscrypt-proxy for local DNS resolving..."
-    achroot pacman -Sy --needed dnscrypt-proxy || exit 1
-    sed -ri 's/^listen_addresses.+$/listen_addresses = ['\''127.0.0.1:53'\'', '\''[::1]:53'\'']/' /mnt/etc/dnscrypt-proxy/dnscrypt-proxy.toml
-    echo "nameserver ::1
+    if pacman -Q dnscrypt-proxy >/dev/null 2>&1; then
+        msg "Setting up dnscrypt-proxy for local DNS resolving..."
+        sed -ri 's/^listen_addresses.+$/listen_addresses = ['\''127.0.0.1:53'\'', '\''[::1]:53'\'']/' /mnt/etc/dnscrypt-proxy/dnscrypt-proxy.toml
+        echo "nameserver ::1
 nameserver 127.0.0.1
 options edns0" >> /mnt/etc/resolv.conf
+        achroot systemctl enable dnscrypt-proxy.service || exit 1
+    fi
 
-
-    msg -e "\nEnabling required systemd services..."
+    msg "
+Enabling systemd network services..."
     achroot systemctl enable systemd-networkd.service || exit 1
-    achroot systemctl enable dnscrypt-proxy.service || exit 1
     if [ -n "$wifi_serv" ]; then
         achroot systemctl enable iwd.service || exit 1
     fi
@@ -170,32 +173,40 @@ prepare_system() {
     msg "First, we will generate the file system table."
     if ask_y_n "Would you like to continue?" continue skip; then
         genfstab -U /mnt >> /mnt/etc/fstab || exit 1
-        msg "The fstab file was successfully created. However, it is recommended to check it manually for errors.
+        msg "The fstab file was successfully created. However, it is recommended to check it
+manually for errors.
 For this, we will open it using the application set as \$EDITOR."
         pause
         edit_file /mnt/etc/fstab
     fi
 
-    msg -e "\nNext, we'll cover time settings. Please note that your system's hardware clock needs to be set to UTC for this to work correctly."
+    msg "
+On to time settings. Please note that your system's hardware clock needs to be
+set to UTC for this to work correctly."
     ask_y_n "Would you like to continue?" continue skip && set_time
 
-    msg -e "\nNow, locale settings."
+    msg "
+Now, locale settings."
     ask_y_n "Would you like to continue?" continue skip && set_locales
 
-    msg -e "\nIf you are using a keyboard layout other than the default US one, you can set
+    msg "
+If you are using a keyboard layout other than the default US one, you can set
 it as the default layout for the virtual console. This will most likely not
 affect the keyboard settings in a desktop environment."
-    ask_y_n "Would you like to continue with setting a custom keyboard layout for the virtual console?" continue skip && set_vcons_kl
+    ask_y_n "Would you like to specify a custom keyboard layout for the virtual console?" continue skip && set_vcons_kl
 
-    msg -e "\nSelect, a hostname next. In line with RFC 1178, a hostname should only include
+    msg "
+Select a hostname next. In line with RFC 1178, a hostname should only include
 lowercase letters, digits and dashes (but not at the beginning)."
     ask_y_n "Would you like to continue?" continue skip && set_hostname
 
-    msg -e "\nFor network access on the new system, we will use systemd-networkd and
+    msg "
+For network access on the new system, we will use systemd-networkd and
 optionally iwd for wireless access."
     ask_y_n "Would you like to continue?" continue skip && setup_network
 
-    msg -e "\nFinally, we will run passwd on the new system to set its root password."
+    msg "
+Finally, we will run passwd on the new system to set its root password."
     ask_y_n "Would you like to continue?" continue skip && achroot passwd
 }
 
@@ -206,13 +217,7 @@ adapt_hooks() {
 
     ask_y_n "Will you be using a non-standard keymap or console font?" && sdv_hook="sd-vconsole"
 
-    msg -e "\nNow would also be good time to install a microcode package as it can be loaded
-by a mkinitcpio hook as well."
-    if ask_y_n "Would you like to install a microcode package?"; then
-        while IFS='' read -r line; do
-            microcode+=("$line")
-        done < <(pacman -Ssq -- -ucode)
-        achroot pacman -Sy --needed "$(select_item "${microcode[@]}")"
+    if achroot pacman -Qqs -- '-ucode$' >/dev/null 2>&1; then
         grep -q microcode <<< "$hooks" || hooks="${hooks/autodetect/autodetect microcode}"
     fi
 
@@ -235,10 +240,12 @@ generate_kcmdline() {
     get_config_var ROOT_ENCRYPTED_NAME
     cryptroot="${config_vars[ROOT_ENCRYPTED_NAME]}"
 
-    msg -e "\nNext, we will generate the kernel command line, which will be integrated into the UKI."
+    msg "
+Next, we will generate the kernel command line, which will be integrated into the UKI."
 
     if [ "$(get_part_parent "$efi")" = "$(get_part_parent "$root")" ]; then
-        msg -e "\nsystemd supports automounting the root partition (others too but for those we
+        msg "
+systemd supports automounting the root partition (others too but for those we
 are using subvolumes), which makes things easier to maintain in the long run.
 The encrypted partition will be provided as /dev/gpt-auto-root-luks, the
 unlocked root partition as /dev/gpt-auto-root.
@@ -258,7 +265,8 @@ you can still choose to specify the root partition explicitly."
         config_vars[GPT_AUTOMOUNT]=$gpt_automount
     fi
    
-    msg -e "\nBefore looking at the generated file, here's an overview of the kernel
+    msg "
+Before looking at the generated file, here's an overview of the kernel
 options included:"
     test $gpt_automount = 0 && msg "	- root: the root partition (i.e. the mapping of the unlocked cryptdevice)"
     msg "	- rootflags: options for mounting the root partitions - for our setup, this
@@ -280,7 +288,8 @@ create_crypttab_initramfs() {
     get_config_var ROOT_PARTITION
     root="${config_vars[ROOT_PARTITION]}"
 
-    msg -e "\nThe last step for creating an UKI is setting up crypttab.initramfs. This is a
+    msg "
+The last step for creating an UKI is setting up crypttab.initramfs. This is a
 crypttab file that will be added to the UKI and will be used to unlock the
 encrypted devices listed in it."
 
@@ -308,7 +317,8 @@ setup_mkinitcpio() {
     local BINARIES mkcp_conf hooks uki_folder
     mkcp_conf="$(mktemp)"
     
-    msg -e "\nAlright then, first, we will add additional hooks to the mkinitcpio config.
+    msg "
+Alright then, first, we will add additional hooks to the mkinitcpio config.
 These are required for unlocking the root partition at boot time. If you are
 using a non-US console keymap or a non-default console font (you aren't if you
 have only been following this script so far), we also need to add the
@@ -324,12 +334,14 @@ have access to it in emergency mode."
 
     adapt_hooks "$mkcp_conf"
 
-    msg -e "\nLet's have a look at the edited mkinitcpio.conf. Check it for errors and make
+    msg "
+Let's have a look at the edited mkinitcpio.conf. Check it for errors and make
 additional edits if desired."
     pause
     edit_file "$mkcp_conf"
 
-    msg -e "\nNow, we will edit the mkinitcpio preset file(s). Not much custom input should be
+    msg "
+Now, we will edit the mkinitcpio preset file(s). Not much custom input should be
 required here. You can comment out the default_options line (the default) if you
 would like to suppress the splash boot image.
 
@@ -340,7 +352,8 @@ partition. If you put them in a different location, you will have to create the
 corresponding entries manuall."
 
     for p in /mnt/etc/mkinitcpio.d/*.preset; do
-        msg -e "\nEditing $p..."
+        msg "
+Editing $p..."
         pause
         for i in default_uki fallback_uki default_options; do
             sed -ri 's/^#('"${i}"'=)/\1/' "$p" || exit 1
@@ -353,7 +366,8 @@ corresponding entries manuall."
 
     create_crypttab_initramfs
 
-    msg -e "\nNow let's create our unified kernel image(s)."
+    msg "
+Now let's create our unified kernel image(s)."
     for p in /mnt/etc/mkinitcpio.d/*.preset; do
         uki_folder="$(grep '^default_uki=' "$p" | cut -d= -f2 | tr -d '"')"
         if [ -z "$uki_folder" ]; then
@@ -387,7 +401,8 @@ install_bootloader() {
 make_bootable() {
     test_system_mounted || exit 1
 
-    msg -e "\nFirst, we will create a unified kernel image (UKI). This requires adapting
+    msg "
+First, we will create a unified kernel image (UKI). This requires adapting
 the configuration and preset files for mkinitcpio and customizing the kernel
 command line. This script should take care of most of the work but each file
 will be opened with a text editor (\$EDITOR) so you can make custom
@@ -398,7 +413,8 @@ extenstions during the boot process."
 
     setup_mkinitcpio
 
-    msg -e "\nNow, let's install the bootloader."
+    msg "
+Now, let's install the bootloader."
     install_bootloader
     # todo: add options for windows
 }
