@@ -309,14 +309,43 @@ test_system_mounted() {
     efi_query="SOURCE == \"$efi\" && TARGET == \"/mnt/boot\""
 
     if [ -z "$(findmnt -Q "$root_query")" ]; then
-        msg -e "\n$root is not mounted at /mnt. Mount your system first before continuing."
+        msg "
+$root is not mounted at /mnt. Mount your system first before continuing."
         return 1
     elif [ -z "$(findmnt -Q "$efi_query")" ]; then
-        msg -e "\nEFI partition $efi not mounted at /mnt/boot. Mount it first before continuing."
+        msg "
+EFI partition $efi not mounted at /mnt/boot. Mount it first before continuing."
         return 1
     else
         return 0
     fi
+}
+
+prepare_for_reboot() {
+    test_system_mounted || exit 1
+    msg "
+First, we will need git on the live medium. It is probably already installed but
+let's make sure."
+    pacman -Sy --needed git
+
+    msg "Cloning to new system..."
+    git clone "https://github.com/Pu-Anlai/strapping-young-lad" /mnt/root/strapping-young-lad
+
+    msg "
+Unmounting the system from /mnt..."
+    umount -R /mnt
+
+    msg "
+This concludes the installation process from the live medium. Next, you should
+shutdown the computer, remove the installation medium and turn the system back
+on. After entering your encryption password, you should be taken to the tty
+login screen where you can login as root.
+Once you have done so, run ./syl.sh 9 to continue.
+
+If you wish to set up Secure Boot later on, you can also enter Secure Boot setup
+mode before booting into the system. However, you may also do this at a later
+stage of the installation process."
+    exit
 }
 
 step() {
