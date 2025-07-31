@@ -209,7 +209,7 @@ get_part_by_type() {
             part="$(echo -n "$line" | cut -d" " -f1)"
             break
         fi
-    done < <(lsblk -no PATH,PARTTYPE "$disk")
+    done < <(lsblk -prno PATH,PARTTYPE "$disk")
     echo -n "$part"
 }
 
