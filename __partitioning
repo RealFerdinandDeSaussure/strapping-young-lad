@@ -2,21 +2,31 @@
 create_parts() {
     local disk
     disk="$1"
-    test_efi_part "$disk"
     msg -e "\nBefore we start, let's have a look at the current partition table:\n"
     sgdisk -p "$disk" || exit 1
-    msg "
-Partitions created by this script will always use the largest continuous block of empty space available.
-If the partition table is heavily fragmented, you should repartition it manually."
-    msg_bold "The total size of this disk is roughly $(($(blockdev --getsize64 "$disk") / 1000000)) Megabyte.
-The total size of the largest continuous block of empty space is roughly $(get_largest_empty_blk_in_m "$disk") Megabyte."
-    msg "
-When providing partition sizes, you can either give values ending in G(igabyte), M(egabyte) or %(=percentage of total disk space.)
-Without any of these qualifiers at the end, values will be considered sectors of 512-byte size.
-The value 0 means the largest continuously empty block on the disk (most of the time, this is equivalent to the remaining empty space).
+    msg -e "\nPartitions created by this script will always use the largest continuous block
+of empty space available.
+If the partition table is heavily fragmented, you should repartition it
+manually."
+    msg_bold "The total size of this disk is roughly $(($(blockdev --getsize64 "$disk") /
+1000000)) Megabyte.
+The total size of the largest continuous block of empty space is roughly
+$(get_largest_empty_blk_in_m "$disk") Megabyte."
+    msg -e "\nWhen providing partition sizes, you can either give values ending in G(igabyte),
+M(egabyte) or %(=percentage of total disk space.)
+Without any of these qualifiers at the end, values will be considered sectors of
+512-byte size.
+The value 0 means the largest continuously empty block on the disk (most of the
+time, this is equivalent to the remaining empty space).
 
 Now let's get started."
+
+    if [ -z "$(get_part_by_type "$disk" "c12a7328-f81f-11d2-ba4b-00a0c93ec93b")" ]; then
+        create_part "$disk" "EFI" "1G" "EF00"
+    fi
+
     create_part "$disk" "root" "0" "8304"
+
     # TODO: XBOOTLDR support
 }
 
@@ -185,29 +195,17 @@ parse_part_size() {
     esac
 }
 
-test_efi_part() {
-    local efi_part
-    msg -n "EFI system partition on $1? "
+get_part_by_type() {
+    local disk type part
+    disk="$1"
+    type="$2"
     while read -r line; do
-        if [ "$(echo "$line" | cut -d" " -f2 | tr "[:upper:]" "[:lower:]")" = "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" ]; then
-            efi_part="$(echo -n "$line" | cut -d" " -f1)"
+        if [ "$(echo "$line" | cut -d" " -f2 | tr "[:upper:]" "[:lower:]")" = "$type" ]; then
+            part="$(echo -n "$line" | cut -d" " -f1)"
             break
         fi
-    done < <(lsblk -no PATH,PARTTYPE "$1")
-
-    if [ -n "$efi_part" ]; then
-        msg_bold "Yes."
-        config_vars[EFI_PARTITION]="$efi_part"
-        return
-    else
-        msg_bold "No."
-        if ask_y_n "Would you like to create one?"; then
-            create_efi_part "$1"
-        else
-            msg "Can't continue without EFI system partition."
-            exit 1
-        fi
-    fi
+    done < <(lsblk -no PATH,PARTTYPE "$disk")
+    echo -n "$part"
 }
 
 create_part() {

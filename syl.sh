@@ -19,9 +19,35 @@ for i in "$SCRIPT_DIR/"__*; do
     source "$i"
 done
 
+set_config_var_efi_partition() {
+    local efi_part
+    efi_part="$(get_part_by_type "$(get_config_var INSTALL_DISK)" "c12a7328-f81f-11d2-ba4b-00a0c93ec93b")"
+    if [ -z "$efi_part" ]; then
+        msg "No EFI partition found. Unable to continue."
+        exit 1
+    fi
+}
+
+set_config_var_root_partition() {
+    local root_part
+    root_part="$(get_part_by_type "$(get_config_var INSTALL_DISK)" "4f68bce3-e8cd-4db1-96e7-fbcaf984b709")"
+    if [ -z "$root_part" ]; then
+        msg "No root partition found. Unable to continue."
+        exit 1
+    fi
+}
+
 # --- functions
 get_config_var() {
-    local val="${config_vars["$1"]}"
+    local setter val
+    setter="set_config_var_${1@l}"
+
+    if declare -F "$setter"; then
+        config_vars["$1"]=$($setter)
+        return
+    fi
+
+    val="${config_vars["$1"]}"
     if [ -z "$val" ]; then
         msg "Setting '$1' not defined. Normally, this is because a previous step was skipped.
 This is the documentation for this setting:
