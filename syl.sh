@@ -91,7 +91,7 @@ test_uefi() {
 
 test_internet() {
     msg -n "Are we connected to the internet? "
-    if ping -c 1 -t 5 8.8.8.8 >/dev/null 2>&1; then
+    if ping -c 1 -w 5 8.8.8.8 >/dev/null 2>&1; then
         msg_bold "Yes."
         return
     else
@@ -374,10 +374,10 @@ may result in unexpected side effects."
             ask_for_skip && prepare_system
             ;;
         7)
-            msg_bold "STEP SEVEN: Making the system bootable
-Yes, what it says in the headline. We will install a bootloader (systemd-boot),
-create a unified kernel image and create a boot entry for it. Optionally, we can
-also create a boot entry for Windows."
+            msg_bold "STEP SEVEN: Making the system bootable"
+            msg "Yes, what it says in the headline. We will first create a unified kernel image
+(UKI) and then install the bootloader. This is the most critical step of the
+installation process as errors made here can result in an unbootable system."
             ask_for_skip && make_bootable
             ;;
     esac
@@ -411,7 +411,6 @@ Greetings! Let's install \033[34mArchLinux\033[0m!
     test_root || exit 1
     test_uefi || exit 1
     test_internet || exit 1
-    test_tpm || exit 1
 
     for s in $(seq "$start" "$STEPS"); do
         step "$s"

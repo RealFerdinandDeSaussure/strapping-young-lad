@@ -1,5 +1,5 @@
 # -*-bash-ts-*-
-achroot() {
+ achroot() {
     arch-chroot /mnt "$@"
 }
 
@@ -238,7 +238,8 @@ generate_kcmdline() {
     msg -e "\nNext, we will generate the kernel command line, which will be integrated into the UKI."
 
     if [ "$(get_part_parent "$efi")" = "$(get_part_parent "$root")" ]; then
-        msg -e "systemd supports automounting the root partition (others too but for those we are using subvolumes), which makes things easier to maintain in the long run.
+        msg -e "\nsystemd supports automounting the root partition (others too but for those we
+are using subvolumes), which makes things easier to maintain in the long run.
 The encrypted partition will be provided as /dev/gpt-auto-root-luks, the
 unlocked root partition as /dev/gpt-auto-root.
 These are the requirements for automounting support:
@@ -247,7 +248,8 @@ These are the requirements for automounting support:
 	- the correct GPT partition types must be set
 	- the bootloader must support it
 
-By following this script, all the criteria should have been met. Nevertheless, you can still choose to specify the root partition explicitly."
+By following this script, all the criteria should have been met. Nevertheless,
+you can still choose to specify the root partition explicitly."
         if ask_y_n "Would you like to use GPT automounting?"; then
             gpt_automount=1
         else
@@ -287,12 +289,14 @@ encrypted devices listed in it."
 you wish to set up additional unlock methods, crypttab.initramfs is a good place
 to do that (the other place would be the kernel commandline)."
         ask_y_n "Would you like to make use of crypttab.initramfs?" || return
+    else
+        pause
     fi
 
     if [ "$gpt_automount" = 1 ]; then
         root_entry="  cryptroot    /dev/gpt-auto-root-luks    none"
     else
-        root_entry="  cryptroot    UUID=$(lsblk -no UUID "$root")    none"
+        root_entry="  cryptroot    UUID=$(lsblk -ndo UUID "$root")    none"
     fi
 
     echo "$root_entry" >> /mnt/etc/crypttab.initramfs
@@ -327,7 +331,13 @@ additional edits if desired."
 
     msg -e "\nNow, we will edit the mkinitcpio preset file(s). Not much custom input should be
 required here. You can comment out the default_options line (the default) if you
-would like to suppress the splash boot image."
+would like to suppress the splash boot image.
+
+Be aware that you do not have to save generated UKIs at the pre-defined path but
+changing it is nevertheless not recommended. The bootloader (systemd-boot) will
+only create entries automatically for images located at /EFI/Linux on your EFI
+partition. If you put them in a different location, you will have to create the
+corresponding entries manuall."
 
     for p in /mnt/etc/mkinitcpio.d/*.preset; do
         msg -e "\nEditing $p..."
@@ -355,10 +365,29 @@ would like to suppress the splash boot image."
     done
 }
 
+write_loader() {
+    local preset base default_uki fallback_uki
+    preset="$1"
+    base="$2"
+    name="$(basename -s .preset "$1")"
+    name="${name@U}"
+    for i in default_uki fallback_uki; do
+        source <(grep "^${i}" "$preset")
+    done
+    echo "title		Arch${name}
+linux		"
+}
+
+install_bootloader() {
+    achroot bootctl install || exit 1
+    msg "Enabling automatic bootloader updates..."
+    achroot systemctl enable systemd-boot-update.service || exit 1
+}
+
 make_bootable() {
     test_system_mounted || exit 1
 
-    msg "First, we will create a unified kernel image (UKI). This requires adapting
+    msg -e "\nFirst, we will create a unified kernel image (UKI). This requires adapting
 the configuration and preset files for mkinitcpio and customizing the kernel
 command line. This script should take care of most of the work but each file
 will be opened with a text editor (\$EDITOR) so you can make custom
@@ -368,4 +397,8 @@ by default uses busybox but using systemd gives us access to a couple of handy
 extenstions during the boot process."
 
     setup_mkinitcpio
+
+    msg -e "\nNow, let's install the bootloader."
+    install_bootloader
+    # todo: add options for windows
 }

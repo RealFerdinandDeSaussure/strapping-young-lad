@@ -17,6 +17,7 @@ The value 0 means the largest continuously empty block on the disk (most of the 
 
 Now let's get started."
     create_part "$disk" "root" "0" "8304"
+    # TODO: XBOOTLDR support
 }
 
 get_part_parent() {
