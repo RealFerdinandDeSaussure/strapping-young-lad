@@ -211,7 +211,7 @@ Please answer the following questions. The package that will be installed if you
 answer 'Yes' is given in parentheses for each question."
 
     for cpu in amd intel; do
-        if ask_y_n "Does your computer run on an $cpu CPU ($cpu-ucode)?"; then
+        if ask_y_n "Does your computer run on an ${cpu@u} CPU ($cpu-ucode)?"; then
             pkgs+=("$cpu-ucode")
         fi
     done
@@ -228,12 +228,11 @@ get_missing_pkgs() {
     for p in "${pkgs[@]}"; do
         pacman -Si "$p" >/dev/null 2>&1 || no_pkgs+=("$p")
     done
-    echo -n "${no_pkgs[*]}"
+    echo -n "${no_pkgs[*]}" | xargs
 }
 
 bootstrap() {
-    local kernel choice
-    declare -a pkgs no_pkgs
+    local kernel choice pkgs no_pkgs
     test_system_mounted || exit 1
 
     while true; do
@@ -245,21 +244,24 @@ bootstrap() {
         msg "Kernel package '$kernel' not found."
     done
 
-    pkgs+=($(prompt_for_extra_pkgs))
+    pkgs+="$(prompt_for_extra_pkgs)"
 
     msg ""
     while true; do
         read -rp "  Please enter additional packages separated by spaces here (default: none): " choice
-        read -ra pkgs <<< "$choice"
-        no_pkgs=($(get_missing_pkgs "$pkgs"))
-        test -z "${no_pkgs[*]}" && break
-        msg "The following packages could not be found:"
-        printf "- %s\n" "${no_pkgs[@]}"
+        no_pkgs="$(get_missing_pkgs "$choice")"
+        if [ -z "$no_pkgs" ]; then
+            pkgs+=" $choice"
+            break
+        else
+            msg "The following packages could not be found:"
+            printf -- "- %s\n" $no_pkgs
+        fi
     done
 
-    msg "\nBootstrapping a base system with the following packages: base $kernel linux-firmware ${pkgs[*]}..."
+    msg "\nBootstrapping a base system with the following packages: base $kernel linux-firmware $pkgs..."
 
-    pacstrap -K /mnt base linux-firmware "$kernel" "${pkgs[*]}" || exit 1
+    pacstrap -K /mnt base linux-firmware "$kernel" $pkgs || exit 1
 }
 
 tab_display() {
