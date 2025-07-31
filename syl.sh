@@ -241,7 +241,7 @@ bootstrap() {
         test -z "$kernel" && kernel=linux
 
         kernel="$(echo -n "$kernel" | xargs)"
-        test -n "$(get_missing_pkgs "$kernel")" && break
+        test -z "$(get_missing_pkgs "$kernel")" && break
         msg "Kernel package '$kernel' not found."
     done
 

@@ -27,6 +27,9 @@ Now let's get started."
 
     if [ -z "$(get_part_by_type "$disk" "c12a7328-f81f-11d2-ba4b-00a0c93ec93b")" ]; then
         create_part "$disk" "EFI" "1G" "EF00"
+        get_config_var EFI_PARTITION
+        mkfs.fat -F 32 "${config_vars[EFI_PARTITION]}" >/dev/null || exit 1
+        msg "EFI partition formatted."
     fi
 
     create_part "$disk" "root" "0" "8304"
@@ -132,28 +135,6 @@ get_lowest_part_num() {
     exit 1
 }
 
-create_efi_part() {
-    local empty_blk start_sec end_sec part_num part
-    empty_blk=$(get_largest_empty_blk_in_m "$1")
-    if [ "$empty_blk" -lt 1000 ]; then
-        msg "Only $empty_blk Megabyte on $1, not enough to continue."
-        exit 1
-    fi
-
-    start_sec="$(sgdisk -F "$1")"
-    end_sec="$((size=1000 * 1000000 / 512, start_sec + size))"
-    part_num=$(get_lowest_part_num "$1")
-    sgdisk -n "$part_num":"$start_sec":"$end_sec" "$1" -t "$1":EF00 || exit 1
-    msg "EFI Partition created."
-
-    part="${1}$part_num"
-    test_part "$part" || exit 1
-    config_vars[EFI_PARTITION]="$part"
-
-    mkfs.fat -F 32 "$part" >/dev/null || exit 1
-    msg "EFI partition formatted."
-}
-
 parse_part_size() {
     local size unit disk
     get_config_var INSTALL_DISK
@@ -233,7 +214,7 @@ get_part_by_type() {
 }
 
 create_part() {
-    local disk type default size part part_num start_sec end_sec fs_label
+    local disk type default size part part_num start_sec end_sec
     disk=$1
     type=$2
     default=$3
