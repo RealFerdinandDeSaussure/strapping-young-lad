@@ -374,7 +374,7 @@ Now let's create our unified kernel image(s)."
             msg "Error! No definition for \"default_uki\" found in $p."
             exit 1
         fi
-        mkdir -p "$(dirname "$uki_folder")" || exit 1
+        mkdir -p "/mnt/$(dirname "$uki_folder")" || exit 1
         achroot mkinitcpio -p "$(basename -s ".preset" "$p")" || exit 1
     done
 }
