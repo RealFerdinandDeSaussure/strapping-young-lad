@@ -381,8 +381,8 @@ step() {
             msg_bold "STEP ONE: Setting up the partition table"
             msg "Specify a disk with unpartitioned disk space. It will be formatted and the
 following partitions will be created on it:
-	- an EFI system partition of size 1G if one does not exist already
-	- an unformatted root partition"
+    - an EFI system partition of size 1G if one does not exist already
+    - an unformatted root partition"
             ask_for_skip && setup_parts
             ;;
         2)
@@ -408,25 +408,25 @@ subvolumes.
 
 First, we will create a btrfs filesystem on root.
 Afterwards, the following subvolumes will be created:
-	- @: the root file system, to be mounted at /
-	- @home: the home \"partition\", to be mounted at /home
-	- @snp: a subvolume to hold snapshots of other subvolumes, to be mounted at /snp
+    - @: the root file system, to be mounted at /
+    - @home: the home \"partition\", to be mounted at /home
+    - @snp: a subvolume to hold snapshots of other subvolumes, to be mounted at /snp
 
 On @, we will create additional subvolumes. This is just so btrfs snapshots will
 not include these paths.
-	- /swap: subvolume to hold a swapfile
-	- /var/var: this and the following subvolumes are for folders considered not relevant for backups
-	- /var/cache
-	- /var/log"
+    - /swap: subvolume to hold a swapfile
+    - /var/var: this and the following subvolumes are for folders considered not relevant for backups
+    - /var/cache
+    - /var/log"
             ask_for_skip && setup_root
             ;;
         4)
             msg_bold "STEP FOUR: Mounting partitions and subvolumes"
             msg "Let's mount our partitions and subvolumes at the following mountpoints:
-	- @ subvolume: /mnt
-	- @home subvolume: /mnt/home
-	- @snp subvolume: /mnt/snp (not necessary but helpful for the genfstab script)
-	- EFI system partition: /mnt/boot
+    - @ subvolume: /mnt
+    - @home subvolume: /mnt/home
+    - @snp subvolume: /mnt/snp (not necessary but helpful for the genfstab script)
+    - EFI system partition: /mnt/boot
 
 Should any of the mountpoints not exist, they will be created."
             ask_for_skip && mount_system
