@@ -234,7 +234,7 @@ zstd will be used for compression."
 
 create_swap_zram() {
     local hib zram ram_kb ram_gb rec
-    ram_kb="$(awk '/^MemTotal:/ {print $2}')"
+    ram_kb="$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)"
     ram_gb="$(awk_calc "$ram_kb / 1024 / 1024")"
     ask_y_n "Will you use hibernation on the system?" && hib=yes
     achroot pacman -Q zram-generator >/dev/null 2>&1 && zram=yes
@@ -273,14 +273,15 @@ create_swap_zram() {
 prepare_system() {
     test_system_mounted || exit 1
 
-    msg "First, let's setup swap and zram. On modern system with 16GB and more, the
-system will run very well using only zram and no swap space at all. Swap can
-still be used as a safety net or if you have a specific RAM-heavy use case in
-mind. Furthermore, if you want to use hibernation on your system, swap space at
-least the size of the available RAM must be available.
+    msg "
+First, let's setup swap and zram. On modern systems with RAM sizes of 16GB and
+more, the system can run without any issues using only zram and no swap space at
+all. Swap can still be used as a safety net or if you have a specific RAM-heavy
+use case in mind. Furthermore, if you want to use hibernation on your system,
+swap space at least the size of the available RAM must be available.
 
-If you decide to use swap, we will go with a swap file because unlike a swap
-partition, a swap file's size can be adapted much easier at a later point."
+If you decide to use swap, a swap file will be used. Unlike a swap partition, a
+swap file's size can be adapted much easier later if desired."
     ask_y_n "Would you like to continue?" continue skip && create_swap_zram
 
     msg "With all partitions mounted and a swap file created, we can generate the file

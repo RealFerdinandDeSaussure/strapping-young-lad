@@ -173,9 +173,9 @@ ask_y_n() {
 ask_y_n_secure() {
     local choice return
     while [ -z "$return" ]; do
-        msg "  To continue, enter your full response in capital letters."
+        msg "  To continue, enter your full response in capital letters (including !)."
         msg_bold -n "  $1 "
-        read -rp "[YES!/NO!]" choice
+        read -rp "[YES!/NO!] " choice
         test "$choice" = "YES!" && return=0
         test "$choice" = "NO!" && return=1
     done
@@ -233,7 +233,7 @@ answer 'Yes' is given in parentheses for each question."
     done
     ask_y_n "Do you want to use a wireless connection on the system (iwd)?" && pkgs+=("iwd")
     ask_y_n "Do you want to encrypt the DNS queries made by the system (dnscrypt-proxy)?" && pkgs+=("dnscrypt-proxy")
-    ask_y_n "Will you make use of zram on the system (recommended!) (zram-generator)" && pkgs+=("zram-generator")
+    ask_y_n "Will you make use of zram on the system (recommended!) (zram-generator)?" && pkgs+=("zram-generator")
 
     echo -n "${pkgs[*]}"
 }
@@ -413,7 +413,7 @@ Afterwards, the following subvolumes will be created:
     - @snp: a subvolume to hold snapshots of other subvolumes, to be mounted at /snp
 
 On @, we will create additional subvolumes. This is just so btrfs snapshots will
-not include these paths.
+not include these paths:
     - /swap: subvolume to hold a swapfile
     - /var/var: this and the following subvolumes are for folders considered not relevant for backups
     - /var/cache
@@ -446,14 +446,16 @@ additional packages if desired."
             msg "Now, we will make some changes to the bootstrapped system that ensure basic
 functionality.
 During this process, the following options can be customized:
+    - swap size and zram settings
     - the fstab file
     - system clock and time settings
     - locale
     - supported network interfaces
+    - root password
 
 This includes quite a few steps and you will be offered to skip any of them in
 case you have already completed them manually. If you have not, skipping a step
-may result in unexpected side effects."
+may result in an incomplete system."
             ask_for_skip && prepare_system
             ;;
         7)
