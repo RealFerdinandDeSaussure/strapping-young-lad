@@ -213,7 +213,7 @@ create_zram() {
     local zram_conf zram_dev
     zram_conf=/mnt/etc/systemd/zram-generator.conf
 
-    msg "Generating zram-generator config file..."
+    msg -e "\nGenerating zram-generator config file..."
     echo "[zram0]
 zram-size = min(ram / 2, 4096)
 compression-algorithm = zstd" > "$zram_conf"
@@ -308,7 +308,7 @@ Now, locale settings."
 If you are using a keyboard layout other than the default US one, you can set
 it as the default layout for the virtual console. This will most likely not
 affect the keyboard settings in a desktop environment."
-    ask_y_n "Would you like to specify a custom keyboard layout for the virtual console?" continue skip && set_vcons_kl
+    ask_y_n "Would you like to continue and specify a custom keyboard layout?" continue skip && set_vcons_kl
 
     msg "
 Select a hostname next. In line with RFC 1178, a hostname should only include
@@ -316,8 +316,8 @@ lowercase letters, digits and dashes (but not at the beginning)."
     ask_y_n "Would you like to continue?" continue skip && set_hostname
 
     msg "
-For network access on the new system, we will use systemd-networkd and
-optionally iwd for wireless access."
+For network access on the new system, we will use systemd-networkd for wired and
+iwd for wireless access."
     ask_y_n "Would you like to continue?" continue skip && setup_network
 
     msg "
@@ -360,13 +360,14 @@ Next, we will generate the kernel command line, which will be integrated into th
 
     if [ "$(get_part_parent "$efi")" = "$(get_part_parent "$root")" ]; then
         msg "
-systemd supports automounting the root partition (others too but for those we
-are using subvolumes), which makes things easier to maintain in the long run.
+systemd supports automounting the root partition (other partitions as well but
+for those we are using subvolumes), which makes things easier to maintain in the
+long run.
 The encrypted partition will be provided as /dev/gpt-auto-root-luks, the
 unlocked root partition as /dev/gpt-auto-root.
 These are the requirements for automounting support:
     - using a systemd initramfs
-    - the root and EFI system partition must be on the same device
+    - the root and EFI system partitions must be on the same device
     - the correct GPT partition types must be set
     - the bootloader must support it
 
@@ -385,7 +386,7 @@ Before looking at the generated file, here's an overview of the kernel
 options included:"
     test $gpt_automount = 0 && msg "    - root: the root partition (i.e. the mapping of the unlocked cryptdevice)"
     msg "    - rootflags: options for mounting the root partitions - for our setup, this
-                 is important as this is where we specify the subvolume
+                 is important as this is where we specify the root subvolume
     - rw: read/write access (this is required for the root partition)
     - quiet: suppress output when booting
     - bgrt_disable: suppress display of the OEM logo"
@@ -410,9 +411,11 @@ encrypted devices listed in it."
 
     if [ "$gpt_automount" = 1 ]; then
         msg "As you have set up automounting, you can entirely ignore this file. However, if
-you wish to set up additional unlock methods, crypttab.initramfs is a good place
-to do that (the other place would be the kernel commandline)."
-        ask_y_n "Would you like to make use of crypttab.initramfs?" || return
+you have set up additional unlock methods for your encrypted partitions,
+crypttab.initramfs is a good place to specify them (the other place would be the
+kernel commandline). We will come back to enrolling other keys and adding them
+to crypttab.initramfs once we have booted into the new system."
+        ask_y_n "Would you nevertheless like to make use of crypttab.initramfs now?" || return
     else
         pause
     fi
@@ -429,11 +432,11 @@ to do that (the other place would be the kernel commandline)."
 }
 
 setup_mkinitcpio() {
-    local BINARIES mkcp_conf hooks uki_folder
+    local BINARIES mkcp_conf hooks uki_folder mkcp_ec
     mkcp_conf="$(mktemp)"
     
     msg "
-Alright then, first, we will add additional hooks to the mkinitcpio config.
+Let's get started! First, we will add additional hooks to the mkinitcpio config.
 These are required for unlocking the root partition at boot time. If you are
 using a non-US console keymap or a non-default console font (you aren't if you
 have only been following this script so far), we also need to add the
@@ -457,12 +460,12 @@ additional edits if desired."
 
     msg "
 Now, we will edit the mkinitcpio preset file(s). Not much custom input should be
-required here. You can comment out the default_options line (the default) if you
-would like to suppress the splash boot image.
+required here. You can comment out the default_options line if you would like to
+suppress the splash boot image.
 
-Be aware that you do not have to save generated UKIs at the pre-defined path but
-it is recommended to do so. The bootloader (systemd-boot) will
-only create entries automatically for images located at /EFI/Linux on your EFI
+Be aware that you do not have to save generated UKIs at the path defined in the
+preset config but it is recommended to do so. The bootloader (systemd-boot) will
+only create entries automatically for images located at EFI/Linux on your EFI
 system partition. If you put them in a different location, you will have to
 create the corresponding entries manually."
 
@@ -490,7 +493,13 @@ Now let's create our unified kernel image(s)."
             exit 1
         fi
         mkdir -p "/mnt/$(dirname "$uki_folder")" || exit 1
-        achroot mkinitcpio -p "$(basename -s ".preset" "$p")" || exit 1
+        achroot mkinitcpio -p "$(basename -s ".preset" "$p")"
+        # mkinitcpio bug: will exit with 1 despite succesful UKI creation
+        mkcp_ec="$?"
+        if [ "$mkcp_ec" -ne 0 ]; then
+            msg "mkinitcpio finished with exit code $mkcp_ec."
+            ask_y_n "Do you wish to continue?" || exit 1
+        fi
     done
 }
 
@@ -550,13 +559,12 @@ entries for them manually."
 make_bootable() {
     test_system_mounted || exit 1
 
-    msg "
-First, we will create a unified kernel image (UKI). This requires adapting
-the configuration and preset files for mkinitcpio and customizing the kernel
-command line. This script should take care of most of the work but each file
-will be opened with a text editor (\$EDITOR) so you can make custom
+    msg "First, we will create one or more unified kernel image(s) (UKI). This requires
+adapting the configuration and preset files for mkinitcpio and customizing the
+kernel command line. This script should take care of most of the work but each
+config file will be opened with a text editor (\$EDITOR) so you can make custom
 adjustments.
-One thing to note is that we will be using a systemd base initramfs. ArchLinux
+One thing to note is that we will be using a systemd based initramfs. ArchLinux
 by default uses busybox but using systemd gives us access to a couple of handy
 extensions during the boot process."
 
