@@ -68,6 +68,10 @@ msg() {
     echo -e $args "$1" >&2
 }
 
+awk_calc() {
+    awk "BEGIN {printf \"%.0f\", $1}"
+}
+
 edit_file() {
     while true; do
         $EDITOR "$1" || exit 1
@@ -373,9 +377,9 @@ following partitions will be created on it:
             msg "Next, we will encrypt the root partition using LUKS2 encryption. You will be
 asked for a password. If you intend to use this password as a decryption key on
 the final system, you should choose a secure one.
-During a later step, you will have the opportunity to enroll a FIDO2 key as
-well. As part of that step, you will also have the chance to delete the password
-you have chosen during the current step from the LUKS key slots.
+During a later step, you will have the opportunity to enroll other keys as well.
+As part of that step, you will also have the option of deleting from the LUKS
+key slots the password you will chose during the current step.
 
 After encryption, the root partition will be unlocked so it can be used in the next steps."
             ask_for_skip && encrypt_parts
@@ -384,16 +388,19 @@ After encryption, the root partition will be unlocked so it can be used in the n
             msg_bold "STEP THREE: Creating btrfs subvolumes"
             msg "Instead of a conventional partitioning scheme, we will be using btrfs subvolumes
 on a single btrfs partition to simulate a multi-partition structure. This has
-the advantage of being able to encrypt a single partition and store all data on
-it. Additionally, we can make use of btrfs's snapshot feature to backup
+the advantage of only encrypting a single partition while still enjoying the
+benefits of a multi partition layout.
+Additionally, you will be able to make use of btrfs's snapshot feature to backup
 subvolumes.
-First we will format root with a btrfs filesystem.
+
+First, we will create a btrfs filesystem on root.
 Afterwards, the following subvolumes will be created:
 	- @: the root file system, to be mounted at /
 	- @home: the home \"partition\", to be mounted at /home
 	- @snp: a subvolume to hold snapshots of other subvolumes, to be mounted at /snp
 
-On @, we will create additional subvolumes to exclude these from future snapshots of @:
+On @, we will create additional subvolumes. This is just so btrfs snapshots will
+not include these paths.
 	- /swap: subvolume to hold a swapfile
 	- /var/var: this and the following subvolumes are for folders considered not relevant for backups
 	- /var/cache
@@ -402,8 +409,7 @@ On @, we will create additional subvolumes to exclude these from future snapshot
             ;;
         4)
             msg_bold "STEP FOUR: Mounting partitions and subvolumes"
-            msg "During this relatively short step, we will mount our partitions at the following
-mountpoints:
+            msg "Let's mount our partitions and subvolumes at the following mountpoints:
 	- @ subvolume: /mnt
 	- @home subvolume: /mnt/home
 	- @snp subvolume: /mnt/snp (not necessary but helpful for the genfstab script)
@@ -477,6 +483,10 @@ Greetings! Let's install \033[34mArchLinux\033[37m!
             exit 1
             ;;
     esac
+
+    msg "
+(Replies to prompts do not need to be written out completely.)
+"
 
     test_root || exit 1
     test_uefi || exit 1

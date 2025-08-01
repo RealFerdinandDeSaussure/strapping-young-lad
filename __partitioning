@@ -117,7 +117,7 @@ encrypt_p() {
 
     msg "
 Encrypting partition at $part. THIS WILL IRREVOCABLY DESTROY ALL DATA ON $part."
-    ask_y_n "Are you sure you want to continue?" || exit 1
+    ask_y_n_secure "Are you sure you want to continue?" || exit 1
 
     (printf "%s" "$pw" | cryptsetup luksFormat --key-file - "$part") || exit 1
     msg "Mapping unlocked partition $part to $crypt_part..."
@@ -157,10 +157,9 @@ parse_part_size() {
             return
             ;;
         %)
-            # use awk cause bash math expansion doesn't support floating point
             local leb product
             leb=$(get_largest_empty_blk "$disk") || exit 1
-            product=$(awk 'BEGIN {printf "%d", '"$leb"' * ('"$size"' / 100)}')
+            product=$(awk_calc "$leb * ($size / 100)")
             msg "This is equal to $(("$product" * 512 / 1000000)) Megabyte."
             if ask_y_n "Would you like to continue?"; then
                 echo -n "$product"
