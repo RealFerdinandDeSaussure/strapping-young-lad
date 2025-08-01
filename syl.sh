@@ -232,7 +232,8 @@ answer 'Yes' is given in parentheses for each question."
         fi
     done
     ask_y_n "Do you want to use a wireless connection on the system (iwd)?" && pkgs+=("iwd")
-    ask_y_n "Do you want to encrypt the DNS queries made by the system (dnscrypt-proxy)?"
+    ask_y_n "Do you want to encrypt the DNS queries made by the system (dnscrypt-proxy)?" && pkgs+=("dnscrypt-proxy")
+    ask_y_n "Will you make use of zram on the system (recommended!) (zram-generator)" && pkgs+=("zram-generator")
 
     echo -n "${pkgs[*]}"
 }

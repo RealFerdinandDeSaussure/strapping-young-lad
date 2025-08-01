@@ -167,10 +167,124 @@ Enabling systemd network services..."
     fi
 }
 
+calculate_swap_rec_zram() {
+    local ram_mb
+    ram_mb="$(awk_calc "$1 / 1024")"
+    if ((0<=ram_mb && ram_mb<=2048)); then
+        echo -n 3
+    elif ((2049<=ram_mb && ram_mb<=4096)); then
+        echo -n 2
+    elif ((4097<=ram_mb && ram_mb<=16384)); then
+        echo -n 1
+    else
+        echo -n 0
+    fi
+}
+
+calculate_swap_rec_no_zram() {
+    local ram_mb swap_mb
+    ram_mb="$(awk_calc "$1 / 1024")"
+
+    if ((0<=ram_mb && ram_mb<=2048)); then
+        swap_mb=$((ram_mb * 2))
+    elif ((2049<=ram_mb && ram_mb<=4096)); then
+        swap_mb=$(awk_calc "ram_mb * 1.5")
+    elif ((4097<=ram_mb && ram_mb<=8192)); then
+        swap_mb=$ram_mb
+    elif ((8193<=ram_mb && ram_mb<=16384)); then
+        swap_mb=$(awk_calc "ram_mb / 2")
+    elif ((16385<=ram_mb && ram_mb<=32768)); then
+        swap_mb=8192
+    else
+        swap_mb=4096
+    fi
+    awk_calc "$swap_mb / 1024"
+}
+
+create_swap() {
+    msg "Creating swap file..."
+    mkswap -U clear --size "$1" --file /mnt/swap/swapfile || exit 1
+
+    msg "Mounting swap file..."
+    swapon /mnt/swap/swapfile || exit 1
+}
+
+create_zram() {
+    local zram_conf zram_dev
+    zram_conf=/mnt/etc/systemd/zram-generator.conf
+
+    msg "Generating zram-generator config file..."
+    echo "[zram0]
+zram-size = min(ram / 2, 4096)
+compression-algorithm = zstd" > "$zram_conf"
+    msg "A configuration file for one zram device has been written to
+zram-generator.conf. Have a look at the config file. In most cases, no further
+customization should be necessary; zram-size is set to its default value and
+zstd will be used for compression."
+    pause
+    edit_file "$zram_conf"
+
+    # in case the user has added additional zram devices
+    while read -r line; do
+        zram_dev="${line:1:-1}"
+        msg "Enabling systemd service for $zram_dev"
+        achroot systemctl enable systemd-zram-setup@"$zram_dev".service
+    done < <(grep -E '^\[.+?\]$' "$zram_conf")
+}
+
+create_swap_zram() {
+    local hib zram ram_kb ram_gb rec
+    ram_kb="$(awk '/^MemTotal:/ {print $2}')"
+    ram_gb="$(awk_calc "$ram_kb / 1024 / 1024")"
+    ask_y_n "Will you use hibernation on the system?" && hib=yes
+    achroot pacman -Q zram-generator >/dev/null 2>&1 && zram=yes
+
+    if [ -n "$zram" ]; then
+        rec="$(calculate_swap_rec_zram "$ram_kb")"
+    else
+        rec="$(calculate_swap_rec_no_zram "$ram_kb")"
+    fi
+
+    if [ -n "$hib" ] && [ "$rec" -lt $(("$ram_gb" + 2)) ]; then
+        rec=$(("$ram_gb" + 2))
+    fi
+
+
+    msg -e "Your system has \033[1m${ram_gb}GB\033[0m of RAM."
+    msg -n "The recommended swap size is: "
+    if [ "$rec" -eq 0 ]; then
+        msg "None."
+        msg "Your system should run fine depending only on RAM and zram."
+    else
+        rec+="G"
+        msg_bold "${rec}B"
+    fi
+
+    if ! ask_y_n "Would you like to continue with the recommendation?"; then
+        read -rp "  Please give a swap size parseable by mkswap (e.g. ending in M or G): " rec
+    fi
+
+    test "$rec" -eq 0 && return
+
+    create_swap "$rec"
+    test -n "$zram" && create_zram
+}
+
 prepare_system() {
     test_system_mounted || exit 1
 
-    msg "First, we will generate the file system table."
+    msg "First, let's setup swap and zram. On modern system with 16GB and more, the
+system will run very well using only zram and no swap space at all. Swap can
+still be used as a safety net or if you have a specific RAM-heavy use case in
+mind. Furthermore, if you want to use hibernation on your system, swap space at
+least the size of the available RAM must be available.
+
+If you decide to use swap, we will go with a swap file because unlike a swap
+partition, a swap file's size can be adapted much easier at a later point."
+    ask_y_n "Would you like to continue?" continue skip && create_swap_zram
+
+    msg "With all partitions mounted and a swap file created, we can generate the file
+system table."
     if ask_y_n "Would you like to continue?" continue skip; then
         genfstab -U /mnt >> /mnt/etc/fstab || exit 1
         msg "The fstab file was successfully created. However, it is recommended to check it
