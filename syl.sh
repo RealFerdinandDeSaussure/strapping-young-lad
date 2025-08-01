@@ -170,6 +170,18 @@ ask_y_n() {
     return $return
 }
 
+ask_y_n_secure() {
+    local choice return
+    while [ -z "$return" ]; do
+        msg "  To continue, enter your full response in capital letters."
+        msg_bold -n "  $1 "
+        read -rp "[YES!/NO!]" choice
+        test "$choice" = "YES!" && return=0
+        test "$choice" = "NO!" && return=1
+    done
+    return $return
+}
+
 ask_for_skip() {
     local choice choice_len yes abort skip return
     yes=yes
