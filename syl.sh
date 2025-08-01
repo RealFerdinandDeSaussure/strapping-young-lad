@@ -12,7 +12,7 @@ man_config_vars[ROOT_ENCRYPTED_NAME]="Name of the mapping for the unlocked encry
 man_config_vars[GPT_AUTOMOUNT]="Whether the root partition should be mounted automatically by systemd (0=no, 1=yes)."
 
 SCRIPT_DIR="$(dirname "$0")"
-STEPS=7
+STEPS=9
 
 # shellcheck source=./*
 for i in "$SCRIPT_DIR/"__*; do
