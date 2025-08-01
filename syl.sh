@@ -69,7 +69,7 @@ msg() {
 }
 
 awk_calc() {
-    awk -v expr="$1" 'BEGIN { printf "%.0f", (expr) }'
+    awk "BEGIN { printf \"%.0f\", $1 }"
 }
 
 edit_file() {
@@ -503,8 +503,8 @@ Greetings! Let's install \033[34mArchLinux\033[37m!
     test_uefi || exit 1
     test_internet || exit 1
 
-    msg "(Replies to prompts do not need to be written out completely.)
-"
+    msg "
+(Replies to prompts do not need to be written out completely.)"
 
     for s in $(seq "$start" "$STEPS"); do
         step "$s"
