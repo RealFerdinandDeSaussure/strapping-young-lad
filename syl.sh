@@ -69,7 +69,7 @@ msg() {
 }
 
 awk_calc() {
-    awk "BEGIN {printf \"%.0f\", $1}"
+    awk -v expr="$1" 'BEGIN { printf "%.0f", (expr) }'
 }
 
 edit_file() {
@@ -299,7 +299,7 @@ select_item() {
         for i in "$@"; do
             test "$i" = "$answer" && break 2
         done
-        msg "$answer is not a valid option."
+        test -n "$answer" && msg "$answer is not a valid option."
     done
     echo -n "$answer"
 }
@@ -320,7 +320,7 @@ mount_system() {
         mount_subvol "$root" "$sv" "${mounts[$sv]}"
     done
 
-    msg "Mounting EFI boot partition..."
+    msg "Mounting EFI system partition..."
     mount --mkdir "$efi" /mnt/boot
 }
 
@@ -335,11 +335,11 @@ test_system_mounted() {
 
     if [ -z "$(findmnt -Q "$root_query")" ]; then
         msg "
-$root is not mounted at /mnt. Mount your system first before continuing."
+root partition $root is not mounted at /mnt. Mount it before continuing."
         return 1
     elif [ -z "$(findmnt -Q "$efi_query")" ]; then
         msg "
-EFI partition $efi not mounted at /mnt/boot. Mount it first before continuing."
+EFI system partition $efi not mounted at /mnt/boot. Mount it before continuing."
         return 1
     else
         return 0
@@ -362,10 +362,10 @@ Unmounting the system from /mnt..."
 
     msg "
 This concludes the installation process from the live medium. Next, you should
-shutdown the computer, remove the installation medium and turn the system back
+shut down the computer, remove the installation medium and turn the system back
 on. After entering your encryption password, you should be taken to the tty
 login screen where you can login as root.
-Once you have done so, run ./syl.sh 9 to continue.
+Once logged in as root, run ./syl.sh 9 to continue the setup.
 
 If you wish to set up Secure Boot later on, you can also enter Secure Boot setup
 mode before booting into the system. However, you may also do this at a later
@@ -399,9 +399,9 @@ After encryption, the root partition will be unlocked so it can be used in the n
             ;;
         3)
             msg_bold "STEP THREE: Creating btrfs subvolumes"
-            msg "Instead of a conventional partitioning scheme, we will be using btrfs subvolumes
-on a single btrfs partition to simulate a multi-partition structure. This has
-the advantage of only encrypting a single partition while still enjoying the
+            msg "Instead of a conventional partitioning scheme, we will use subvolumes on a
+single btrfs partition to simulate a multi-partition structure. This has the
+advantage of only encrypting a single partition while still enjoying the
 benefits of a multi partition layout.
 Additionally, you will be able to make use of btrfs's snapshot feature to backup
 subvolumes.
@@ -433,12 +433,12 @@ Should any of the mountpoints not exist, they will be created."
             ;;
         5)
             msg_bold "STEP FIVE: Bootstrapping the system"
-            msg "Now, we will bootstrap the system by coping a base ArchLinux install to the
+            msg "Now, we will bootstrap the system by copying a base ArchLinux install to the
 prepared system. Normally, this base system will consist of three packages:
 base, linux and linux-firmware.
-We will also install a couple of extra packages that may be relevant to you
-later on. If you wish, you can switch out 'linux' with a different kernel
-package. You may also specify additional packages yourself."
+We will also install a few extra packages that may be useful later. If you wish,
+you can switch out 'linux' with a different kernel package. You may also specify
+additional packages if desired."
             ask_for_skip && bootstrap
             ;;
         6)
@@ -467,7 +467,7 @@ installation process as errors made here can result in an unbootable system."
             msg_bold "STEP EIGHT: Copying the script to the new system"
             msg "At this point, the system should be bootable. Before we will boot into it, we
 will clone this script's git repository to the new system's root folder so we
-can continue with the stup process after booting into the new system."
+can continue with the setup process after booting into the new system."
             ask_for_skip && prepare_for_reboot
     esac
     msg ""
@@ -497,13 +497,12 @@ Greetings! Let's install \033[34mArchLinux\033[37m!
             ;;
     esac
 
-    msg "
-(Replies to prompts do not need to be written out completely.)
-"
-
     test_root || exit 1
     test_uefi || exit 1
     test_internet || exit 1
+
+    msg "(Replies to prompts do not need to be written out completely.)
+"
 
     for s in $(seq "$start" "$STEPS"); do
         step "$s"

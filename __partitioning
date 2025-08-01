@@ -29,7 +29,7 @@ Now let's get started."
         create_part "$disk" "EFI" "1G" "EF00"
         get_config_var EFI_PARTITION
         mkfs.fat -F 32 "${config_vars[EFI_PARTITION]}" >/dev/null || exit 1
-        msg "EFI partition formatted."
+        msg "EFI system partition formatted."
     fi
 
     create_part "$disk" "root" "0" "8304"
@@ -48,7 +48,7 @@ setup_parts() {
         if [ ! -b "$disk" ]; then
             msg "$disk is not a block device"
         elif [ ! "$(dirname "$disk")" = "/dev" ]; then
-            msg "Disk path needs to be in /dev."
+            msg "Disk path needs to reside in /dev."
         else
             break
         fi
@@ -85,7 +85,7 @@ setup_parts() {
 
     if [ -n "$(findmnt -Q 'SOURCE =~ "'"${disk}"'[0-9]+"')" ]; then
         msg "
-Partitions of $disk are currently mounted. Unmount them before proceeding."
+Partitions on $disk are currently mounted. Unmount them before proceeding."
         exit 1
     fi
 
@@ -246,7 +246,7 @@ create_part() {
 
 test_part() {
     if [ ! -b "$1" ]; then
-        msg "Oh no, something wrent something somewhere and there is no partition at $1."
+        msg "Oh no, something wrent something no partition exists at $1."
         return 1
     else
         return 0

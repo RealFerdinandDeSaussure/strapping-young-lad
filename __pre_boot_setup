@@ -252,7 +252,7 @@ create_swap_zram() {
 
     msg -e "Your system has \033[1m${ram_gb}GB\033[0m of RAM."
     msg -n "The recommended swap size is: "
-    if [ "$rec" -eq 0 ]; then
+    if [ "$rec" = 0 ]; then
         msg "None."
         msg "Your system should run fine depending only on RAM and zram."
     else
@@ -264,7 +264,7 @@ create_swap_zram() {
         read -rp "  Please give a swap size parseable by mkswap (e.g. ending in M or G): " rec
     fi
 
-    test "$rec" -eq 0 && return
+    test "$rec" = 0 && return
 
     create_swap "$rec"
     test -n "$zram" && create_zram
@@ -365,7 +365,7 @@ The encrypted partition will be provided as /dev/gpt-auto-root-luks, the
 unlocked root partition as /dev/gpt-auto-root.
 These are the requirements for automounting support:
     - using a systemd initramfs
-    - the root and EFI partition must be on the same device
+    - the root and EFI system partition must be on the same device
     - the correct GPT partition types must be set
     - the bootloader must support it
 
