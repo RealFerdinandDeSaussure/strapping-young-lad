@@ -274,12 +274,11 @@ create_swap_zram() {
 prepare_system() {
     test_system_mounted || exit 1
 
-    msg "
-First, let's setup swap and zram. On modern systems with RAM sizes of 16GB and
+    msg "First, let's setup swap and zram. On modern systems with RAM sizes of 16GB and
 more, the system can run without any issues using only zram and no swap space at
 all. Swap can still be used as a safety net or if you have a specific RAM-heavy
 use case in mind. Furthermore, if you want to use hibernation on your system,
-swap space at least the size of the available RAM must be available.
+swap space at least the size of the available RAM must be set up.
 
 If you decide to use swap, a swap file will be used. Unlike a swap partition, a
 swap file's size can be adapted much easier later if desired."

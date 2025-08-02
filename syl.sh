@@ -86,7 +86,7 @@ edit_file() {
 pause() {
     local prompt
     prompt="$1"
-    test -n "$prompt" && prompt="Press any key to continue."
+    test -z "$prompt" && prompt="Press any key to continue."
     read -n1 -srp "$prompt"
     msg ""
 }
@@ -374,6 +374,7 @@ EFI system partition $efi not mounted at /mnt/boot. Mount it before continuing."
 }
 
 prepare_for_reboot() {
+    local swap
     test_system_mounted || exit 1
     msg "
 First, we will need git on the live medium. It is probably already installed but
@@ -385,6 +386,7 @@ let's make sure."
 
     msg "
 Unmounting the system from /mnt..."
+    swapoff -a
     umount -R /mnt
 
     msg "
