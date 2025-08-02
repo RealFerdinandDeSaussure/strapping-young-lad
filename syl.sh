@@ -567,7 +567,7 @@ Greetings! Let's install \033[34mArchLinux\033[37m!
     msg "
 (Replies to prompts do not need to be written out completely.)"
 
-    for s in $(seq "$start" "$STEPS"); do
+    for s in $(seq "$STEP" "$STEPS"); do
         step "$s"
     done
 fi
