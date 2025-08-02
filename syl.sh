@@ -264,7 +264,14 @@ bootstrap() {
 
     pkgs+="$(prompt_for_extra_pkgs)"
 
-    msg ""
+    msg "
+If desired, you can specify additional packages you would like to install on the
+system. Some common choices would be:
+    - man
+    - less
+    - sudo
+    - vim
+"
     while true; do
         read -rp "  Please enter additional packages separated by spaces here (default: none): " choice
         no_pkgs="$(get_missing_pkgs "$choice")"
