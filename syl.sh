@@ -247,8 +247,8 @@ answer 'Yes' is given in parentheses for each question."
 }
 
 get_missing_pkgs() {
-    declare -a no_pkgs
-    mapfile -t pkgs <<< "$1"
+    declare -a pkgs no_pkgs
+    read -ra pkgs <<< "$1"
 
     for p in "${pkgs[@]}"; do
         pacman -Si "$p" >/dev/null 2>&1 || no_pkgs+=("$p")
@@ -274,7 +274,8 @@ bootstrap() {
     msg "
 If desired, you can specify additional packages you would like to install on the
 system. Some common choices would be:
-    - man
+    - man-db
+    - man-pages
     - less
     - sudo
     - vim
