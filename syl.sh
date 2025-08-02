@@ -276,6 +276,9 @@ bootstrap() {
         fi
     done
 
+    # add btrfs-progs so we can put btrfs binary in the initramfs
+    pkgs+=" btrfs-progs"
+
     msg "\nBootstrapping a base system with the following packages: base $kernel linux-firmware $pkgs..."
 
     pacstrap -K /mnt base linux-firmware "$kernel" $pkgs || exit 1

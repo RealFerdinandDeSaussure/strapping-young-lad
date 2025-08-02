@@ -327,7 +327,6 @@ Finally, we will run passwd on the new system to set its root password."
 
 adapt_hooks() {
     local hooks sdv_hook
-    declare -a microcode
     hooks="$(grep '^HOOKS' "$1")"
 
     ask_y_n "Will you be using a non-standard keymap or console font?" && sdv_hook="sd-vconsole"
@@ -432,7 +431,7 @@ to crypttab.initramfs once we have booted into the new system."
 }
 
 setup_mkinitcpio() {
-    local BINARIES mkcp_conf hooks uki_folder mkcp_ec
+    local BINARIES mkcp_conf hooks uki_folder
     mkcp_conf="$(mktemp)"
     
     msg "
@@ -457,6 +456,7 @@ Let's have a look at the edited mkinitcpio.conf. Check it for errors and make
 additional edits if desired."
     pause
     edit_file "$mkcp_conf"
+    cp "$mkcp_conf" /mnt/etc/mkinitcpio.conf
 
     msg "
 Now, we will edit the mkinitcpio preset file(s). Not much custom input should be
@@ -494,12 +494,6 @@ Now let's create our unified kernel image(s)."
         fi
         mkdir -p "/mnt/$(dirname "$uki_folder")" || exit 1
         achroot mkinitcpio -p "$(basename -s ".preset" "$p")"
-        # mkinitcpio bug: will exit with 1 despite succesful UKI creation
-        mkcp_ec="$?"
-        if [ "$mkcp_ec" -ne 0 ]; then
-            msg "mkinitcpio finished with exit code $mkcp_ec."
-            ask_y_n "Do you wish to continue?" || exit 1
-        fi
     done
 }
 
