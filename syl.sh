@@ -12,7 +12,7 @@ man_config_vars[ROOT_ENCRYPTED_NAME]="Name of the mapping for the unlocked encry
 man_config_vars[GPT_AUTOMOUNT]="Whether the root partition should be mounted automatically by systemd (0=no, 1=yes)."
 
 SCRIPT_DIR="$(dirname "$0")"
-STEPS=9
+STEPS=10
 STEP=$1
 
 # shellcheck source=./*
@@ -81,7 +81,10 @@ edit_file() {
 }
 
 pause() {
-    read -n1 -srp "Press any key to continue."
+    local prompt
+    prompt="$1"
+    test -n "$prompt" && prompt="Press any key to continue."
+    read -n1 -srp "$prompt"
     msg ""
 }
 
@@ -503,6 +506,28 @@ The first few steps deal with security. We will install ufw, a simple firewall,
 and set up a very basic ruleset for it. Afterwards, we can get onto the much
 more daunting (and optional) task of installing Secure Boot."
             ask_for_skip && setup_firewall
+            ;;
+        10)
+            msg_bold "STEP TEN: Setting up Secure Boot"
+            msg "Secure Boot provides a way to prevent unnoticed tampering with the bootchain.
+Using Secure Boot requires signing different parts of the bootchain and
+verifying their signature before execution.
+
+Device firmware can also be factory-signed and make use on Secure Boot for
+verification. The certificate used for signing in these cases will be the ones
+provided by Microsoft. For this reason, we will also enroll Microsoft's keys.
+This is non-optional as not doing so can run the risk of bricking your entire
+system.
+
+All the commands in this step are well documented and are considered safe. I use
+this script myself to set up Secure Boot on my system and have never run into
+any issues. Nevertheless, you yourself are responsible for reading through the
+script and taking proper care when executing this step. I TAKE NO RESPONSIBILITY
+FOR ANY DAMAGE YOUR SYSTEM MAY SUSTAIN.
+
+Secure Boot is a useful security feature but if this is all a bit much for you,
+feel free to skip this step."
+            ask_for_skip && setup_sboot
             ;;
     esac
     msg ""
