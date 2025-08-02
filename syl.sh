@@ -234,6 +234,7 @@ answer 'Yes' is given in parentheses for each question."
     ask_y_n "Do you want to use a wireless connection on the system (iwd)?" && pkgs+=("iwd")
     ask_y_n "Do you want to encrypt the DNS queries made by the system (dnscrypt-proxy)?" && pkgs+=("dnscrypt-proxy")
     ask_y_n "Will you make use of zram on the system (recommended!) (zram-generator)?" && pkgs+=("zram-generator")
+    ask_y_n "Do you want to build custom (e.g. AUR) packages on the system? (base-devel)" && pkgs+=("base-devel")
 
     echo -n "${pkgs[*]}"
 }
@@ -386,6 +387,7 @@ step() {
 following partitions will be created on it:
     - an EFI system partition of size 1G if one does not exist already
     - an unformatted root partition"
+            # TODO: alternative partition layout
             ask_for_skip && setup_parts
             ;;
         2)

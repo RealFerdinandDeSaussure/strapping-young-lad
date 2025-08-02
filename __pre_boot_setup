@@ -103,7 +103,7 @@ Multicast=yes
 RequiredForOnline=routable
 
 [Network]
-MulticastDNS" > "$custom"
+MulticastDNS=yes" > "$custom"
     echo -n "$service"
 }
 
@@ -111,7 +111,8 @@ create_net_dropin() {
     local dropin_folder
     dropin_folder=/mnt/etc/systemd/network/"$1".d
     mkdir -p "$dropin_folder"
-    cp "$2" "$dropin_folder"/10-custom.conf
+    # sytemd-networkd requires these files to have 644 umask
+    install -m 644 "$2" "$dropin_folder"/10-custom.conf
 }
 
 setup_network() {
