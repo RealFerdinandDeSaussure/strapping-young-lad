@@ -203,11 +203,15 @@ calculate_swap_rec_no_zram() {
 }
 
 create_swap() {
+    local swapfile
+    swapfile=/mnt/swap/swapfile
     msg "Creating swap file..."
-    mkswap -U clear --size "$1" --file /mnt/swap/swapfile || exit 1
+    if ! test -f "$swapfile"; then
+        mkswap -U clear --size "$1" --file "$swapfile" || exit 1
+    fi
 
     msg "Mounting swap file..."
-    swapon /mnt/swap/swapfile || exit 1
+    swapon "$swapfile" || exit 1
 }
 
 create_zram() {
