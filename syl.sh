@@ -13,6 +13,7 @@ man_config_vars[GPT_AUTOMOUNT]="Whether the root partition should be mounted aut
 
 SCRIPT_DIR="$(dirname "$0")"
 STEPS=9
+STEP=$1
 
 # shellcheck source=./*
 for i in "$SCRIPT_DIR/"__*; do
@@ -335,6 +336,14 @@ mount_system() {
     mount --mkdir "$efi" /mnt/boot
 }
 
+test_on_live_system() {
+    if [ "$(findmnt -no SOURCE)" = airootfs ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 test_system_mounted() {
     local root root_query efi_query
     get_config_var ROOT_ENCRYPTED_NAME
@@ -483,15 +492,19 @@ installation process as errors made here can result in an unbootable system."
 will clone this script's git repository to the new system's root folder so we
 can continue with the setup process after booting into the new system."
             ask_for_skip && prepare_for_reboot
+            ;;
+        9)
+            msg_bold "STEP NINE: Setting up additional security features
+"
     esac
     msg ""
 }
 # --- end functions
 
 if ! (return 0 2>/dev/null); then
-    case "$1" in
+    case "$STEP" in
         "")
-            start=1
+            STEP=1
             msg_bold -e "\033[37m
 -----------------------------------
 Greetings! Let's install \033[34mArchLinux\033[37m!
@@ -499,14 +512,17 @@ Greetings! Let's install \033[34mArchLinux\033[37m!
 "
             ;;
         [0-9]*)
-            if [ "$1" -gt "$STEPS" ]; then
-                msg "There is no step $1."
+            if ((STEP > STEPS || STEP == 0)); then
+                msg "There is no step $STEP."
                 exit 1
+            elif ((STEP < 9)) && ! test_on_live_system; then
+                msg_bold -e "WARNING: Step $STEP is intended to be run from Arch live media.\n"
+            elif test_on_live_system; then
+                msg_bold -e "WARNING: Step $STEP is intended to be run from the installed system.\n"
             fi
-            start="$1"
             ;;
         *)
-            msg "Invalid argument: $1"
+            msg "Invalid argument: $STEP"
             exit 1
             ;;
     esac
