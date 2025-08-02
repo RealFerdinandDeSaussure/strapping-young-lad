@@ -6,8 +6,6 @@ declare -A config_vars
 declare -A man_config_vars
 
 man_config_vars[INSTALL_DISK]="Path to the block device that holds or should hold partitions for the installation."
-man_config_vars[EFI_PARTITION]="Path to the EFI system partition."
-man_config_vars[ROOT_PARTITION]="Path to the partition that will be used for hosting all system files."
 man_config_vars[ROOT_ENCRYPTED_NAME]="Name of the mapping for the unlocked encrypted root partition."
 man_config_vars[GPT_AUTOMOUNT]="Whether the root partition should be mounted automatically by systemd (0=no, 1=yes)."
 
@@ -30,8 +28,12 @@ set_config_var_root_partition() {
 
 # --- functions
 get_config_var() {
-    local setter setter_return val
+    local setter setter_return val env
     val="${config_vars["$1"]}"
+    test -n "$val" && return
+    # try to get value from the environment
+    env=SYL_"${1@U}"
+    val="${!env}"
     test -n "$val" && return
 
     setter="set_config_var_${1@L}"
@@ -405,7 +407,10 @@ step() {
             msg "Specify a disk with unpartitioned disk space. It will be formatted and the
 following partitions will be created on it:
     - an EFI system partition of size 1G if one does not exist already
-    - an unformatted root partition"
+    - an unformatted root partition
+
+General note: If you abort the installation process at any point, you may
+restart at a specific step by passing its number as an argument to the script."
             # TODO: alternative partition layout
             ask_for_skip && setup_parts
             ;;
@@ -415,8 +420,7 @@ following partitions will be created on it:
 asked for a password. If you intend to use this password as a decryption key on
 the final system, you should choose a secure one.
 During a later step, you will have the opportunity to enroll other keys as well.
-As part of that step, you will also have the option of deleting from the LUKS
-key slots the password you will chose during the current step.
+You may then also delete the password you set during this step.
 
 After encryption, the root partition will be unlocked so it can be used in the next steps."
             ask_for_skip && encrypt_parts
