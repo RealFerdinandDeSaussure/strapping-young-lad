@@ -8,6 +8,8 @@ declare -A man_config_vars
 man_config_vars[INSTALL_DISK]="Path to the block device that holds or should hold partitions for the installation."
 man_config_vars[ROOT_ENCRYPTED_NAME]="Name of the mapping for the unlocked encrypted root partition."
 man_config_vars[GPT_AUTOMOUNT]="Whether the root partition should be mounted automatically by systemd (0=no, 1=yes)."
+man_config_vars[ROOT_PARTITION]="Path to the partition that should hold the root file system."
+man_config_vars[EFI_PARTITION]="Path to the partition that should hold the root file system."
 
 SCRIPT_DIR="$(dirname "$0")"
 STEPS=10
@@ -19,29 +21,28 @@ for i in "$SCRIPT_DIR/"__*; do
 done
 
 set_config_var_efi_partition() {
-    get_part EFI
+    get_config_var INSTALL_DISK
+    config_vars[EFI_PARTITION]="$(get_part "${config_vars[INSTALL_DISK]}" EFI)"
 }
 
 set_config_var_root_partition() {
-    get_part root
+    get_config_var INSTALL_DISK
+    config_vars[ROOT_PARTITION]="$(get_part "${config_vars[INSTALL_DISK]}" root)"
 }
 
 # --- functions
 get_config_var() {
-    local setter setter_return val env
-    val="${config_vars["$1"]}"
-    test -n "$val" && return
+    local setter val env
+    test -n "${config_vars["$1"]}" && return
     # try to get value from the environment
-    env=SYL_"${1@U}"
-    val="${!env}"
-    test -n "$val" && return
+    env=SYL_"${1^^}"
+    config_vars["$1"]="${!env}"
+    test -n "${config_vars["$1"]}" && return
 
-    setter="set_config_var_${1@L}"
+    setter="set_config_var_${1,,}"
     if declare -F "$setter" >/dev/null; then
-        setter_return=$($setter)
-        test -z "$setter_return" && exit 1
-        config_vars["$1"]="$setter_return"
-        return
+        $setter
+        test -n "${config_vars["$1"]}" && return
     fi
 
     msg "Setting '$1' not defined. Normally, this is because a previous step was skipped.
@@ -160,7 +161,7 @@ ask_y_n() {
 
     while [ -z "$return" ]; do
         msg_bold -n "  $1 "
-        read -rp "[${yes@u}/${no@u}] " choice
+        read -rp "[${yes^}/${no^}] " choice
         test -n "$choice" && choice_len=${#choice}
         test "$choice_len" -eq 0 && continue
         choice="$(echo "$choice" | xargs | tr "[:upper:]" "[:lower:]")"
@@ -233,7 +234,7 @@ Please answer the following questions. The package that will be installed if you
 answer 'Yes' is given in parentheses for each question."
 
     for cpu in amd intel; do
-        if ask_y_n "Does your computer run on an ${cpu@u} CPU ($cpu-ucode)?"; then
+        if ask_y_n "Does your computer run on an ${cpu^} CPU ($cpu-ucode)?"; then
             pkgs+=("$cpu-ucode")
         fi
     done

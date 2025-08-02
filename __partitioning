@@ -137,16 +137,15 @@ get_lowest_part_num() {
 
 parse_part_size() {
     local size unit disk
-    get_config_var INSTALL_DISK
-    disk="${config_vars[INSTALL_DISK]}"
+    disk="$1"
 
-    if [[ "$1" == "0" ]]; then
+    if [[ "$2" == "0" ]]; then
         get_largest_empty_blk "$disk"
         return
     fi
 
-    unit="$(echo -n "${1: -1}" | tr "[:lower:]" "[:upper:]")"
-    size="${1:0:$((${#1} - 1))}"
+    unit="$(echo -n "${2: -1}" | tr "[:lower:]" "[:upper:]")"
+    size="${2:0:$((${#2} - 1))}"
     case "$unit" in
         G)
             echo -n "$(("$size" * 1000000000 / 512))"
@@ -169,22 +168,23 @@ parse_part_size() {
             fi
             ;;
         [0-9])
-            if [[ "$1" =~ ^[0-9]+ ]]; then
-                echo -n "$1"
+            if [[ "$2" =~ ^[0-9]+ ]]; then
+                echo -n "$2"
                 return
             fi
             ;&
         *)
-            msg "Couldn't parse size '$1'."
+            msg "Couldn't parse size '$2'."
             return 1
             ;;
     esac
 }
 
 get_part() {
-    local part type
+    local part type disk
+    disk="$1"
 
-    case "$1" in
+    case "$2" in
         "EFI")
             type="c12a7328-f81f-11d2-ba4b-00a0c93ec93b"
             ;;
@@ -193,8 +193,7 @@ get_part() {
             ;;
     esac
 
-    get_config_var INSTALL_DISK
-    part="$(get_part_by_type "${config_vars[INSTALL_DISK]}" "$type")"
+    part="$(get_part_by_type "$disk" "$type")"
     test -z "$part" && msg "No $1 partition found. Unable to continue."
     echo -n "$part"
 }
@@ -220,10 +219,11 @@ create_part() {
 
     declare -a guid
 
+    get_config_var INSTALL_DISK
     while true; do
         read -rp "  Please provide the desired size of partition '$type' (default: $default): " val
         test -z "$val" && val="$default"
-        size="$(parse_part_size "$val")"
+        size="$(parse_part_size "${config_vars[INSTALL_DISK]}" "$val")"
         test ! $? -eq 0 && continue
         if [ "$(get_largest_empty_blk "$disk")" -ge "$size" ]; then
             break

@@ -503,7 +503,7 @@ write_loader() {
     preset="$1"
     base="$2"
     name="$(basename -s .preset "$1")"
-    name="${name@U}"
+    name="${name^^}"
     for i in default_uki fallback_uki; do
         source <(grep "^${i}" "$preset")
     done
