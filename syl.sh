@@ -494,8 +494,16 @@ can continue with the setup process after booting into the new system."
             ask_for_skip && prepare_for_reboot
             ;;
         9)
-            msg_bold "STEP NINE: Setting up additional security features
-"
+            msg_bold "STEP NINE: Setting up a basic firewall"
+            msg "Now that we are on the new system (if we are not, you should quit and reboot
+into the system), we can make additional steps toward a more fully fleshed out
+setup.
+
+The first few steps deal with security. We will install ufw, a simple firewall,
+and set up a very basic ruleset for it. Afterwards, we can get onto the much
+more daunting (and optional) task of installing Secure Boot."
+            ask_for_skip && setup_firewall
+            ;;
     esac
     msg ""
 }
