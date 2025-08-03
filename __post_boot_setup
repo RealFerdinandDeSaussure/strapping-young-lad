@@ -7,7 +7,15 @@ get_sb_mode() {
     mode="$(LANG=en_US.UTF-8 bootctl | grep 'Secure Boot:' | cut -d: -f2 | xargs)"
     case "$mode" in
         "disabled (setup)")
-            echo -n "setup"
+            shopt -s nullglob
+            declare -a PKs
+            PKs=(/sys/firmware/efi/efivars/PK*)
+            shopt -u nullglob
+            if [ ${#PKs[@]} -eq 0 ]; then
+                echo -n "setup"
+            else
+                echo -n "broken"
+            fi
             ;;
         "enabled (user)")
             echo -n "on"
@@ -129,7 +137,7 @@ signing_fail() {
 }
 
 enroll_keys() {
-    local sb_dir ms_dir sbsign_dir
+    local sb_dir ms_dir sbsign_dir PKs
     declare -a keys
     sb_dir="$1"
     ms_dir="$2"
@@ -146,9 +154,12 @@ enroll_keys() {
 
     msg "All keys are now located at ${sbsign_dir}. We will now use sbkeysync to enroll them."
     pause
-    chattr -i /sys/firmware/efi/efivars/{PK,KEK,db}* || exit 1
-    sbkeysync --keystore "$sbsign_dir" --verbose || signing_fail
-    sbkeysync --keystore "$sbsign_dir" --verbose --pk || signing_fail
+
+    for k in /sys/firmware/efi/efivars/{PK,KEK,db}*; do
+        chattr -i "$k"
+    done
+    sbkeysync --keystore "$sbsign_dir" || signing_fail
+    efi-updatevar -f "${sbsign_dir}/PK/PK.auth" PK || signing_fail
 
     shopt -u nullglob
 }
@@ -227,11 +238,28 @@ setup_sboot() {
     ms_dir="$(mktemp -d)"
     sb_mode="$(get_sb_mode)"
 
-    if [ "$sb_mode" = "on" ]; then
-        msg "Secure Boot is already set up. There is nothing to do."
-        pause "Press any key to continue with the next step."
-        return
-    fi
+    case "$sb_mode" in
+        "on")
+            msg "Secure Boot is already set up. There is nothing to do."
+            pause "Press any key to continue with the next step."
+            return
+            ;;
+        "setup")
+            msg "Secure Boot needs to be in \"Setup Mode\" before we can continue. To enter setup
+mode, you need to enter your motherboard's firmware (sometimes called BIOS) and
+delete the Platform Keys. Look for options allowing you to delete certificates
+or delete PK. After rebooting run ./syl.sh 10 to continue at the current step.
+
+\"systemctl reboot --firmware-setup\" can be used to boot into firmware."
+            ask_y_n_secure "Do you wish to run this command now?" && systemctl reboot --firmware-setup
+            exit
+            ;;
+        "broken")
+            msg "bootctl reports that we are in setup mode, yet there is a PK EFI variable set.
+This should never happen. Check your firmware's Secure Boot implementation."
+            exit 1
+            ;;
+    esac
 
     msg "Okay then, let's set up Secure Boot. Thankfully, you can use this script and do not
 have to go through this ordeal on your own.
@@ -247,17 +275,6 @@ process."
     pacman -Sy --needed efitools sbsigntools || exit 1
 
     backup_sb_efivars
-
-    if [ "$(get_sb_mode)" != setup ]; then
-        msg "Secure Boot needs to be in \"Setup Mode\" before we can continue. To enter setup
-mode, you need to enter your motherboard's firmware (sometimes called BIOS) and
-delete the Platform Keys. Look for options allowing you to delete certificates
-or delete PK. After rebooting run ./syl.sh 10 to continue at the current step.
-
-\"systemctl reboot --firmware-setup\" can be used to boot into firmware."
-        ask_y_n_secure "Do you wish to run this command now?" && systemctl reboot --firmware-setup
-        exit
-    fi
 
     create_sb_keyset "$sb_dir"
     create_ms_db "$ms_dir" "$sb_dir"
