@@ -245,6 +245,14 @@ setup_sboot() {
             return
             ;;
         "setup")
+            :
+            ;;
+        "broken")
+            msg "bootctl reports that we are in setup mode, yet there is a PK EFI variable set.
+This should never happen. Check your firmware's Secure Boot implementation."
+            exit 1
+            ;;
+        *)
             msg "Secure Boot needs to be in \"Setup Mode\" before we can continue. To enter setup
 mode, you need to enter your motherboard's firmware (sometimes called BIOS) and
 delete the Platform Keys. Look for options allowing you to delete certificates
@@ -253,11 +261,6 @@ or delete PK. After rebooting run ./syl.sh 10 to continue at the current step.
 \"systemctl reboot --firmware-setup\" can be used to boot into firmware."
             ask_y_n_secure "Do you wish to run this command now?" && systemctl reboot --firmware-setup
             exit
-            ;;
-        "broken")
-            msg "bootctl reports that we are in setup mode, yet there is a PK EFI variable set.
-This should never happen. Check your firmware's Secure Boot implementation."
-            exit 1
             ;;
     esac
 
