@@ -188,9 +188,9 @@ Type = Path
 Target = usr/lib/systemd/boot/efi/systemd-boot*.efi
 
 [Action]
-Description = Signing systemd-boot EFI binary for Secure Boot
+Description = Signing systemd-boot for Secure Boot...
 When = PostTransaction
-Exec = /bin/sh -c '\''while read -r f; do /usr/bin/sbsign --key /root/sb-keys/db.key --cert /root/sb-keys/db.crt --output "${f}.signed" "$f"; done;'\''
+Exec = /bin/sh -c '\''while read -r f; do /usr/bin/sbsign --key /root/sb-keys/db.key --cert /root/sb-keys/db.crt --output "${f}.signed" "$f" >/dev/null ; done;'\''
 Depends = sh
 NeedsTargets' > "${hook_dir}/80-secureboot.hook"
 }
@@ -227,6 +227,7 @@ systemd-boot).
 To make sure that both the pacman and mkinitcpio hook are working, we will not
 sign anything manually but create the hooks and run them to trigger the signing
 process."
+    pause
 
     msg "Creating pacman hook..."
     create_pacman_sb_hook
@@ -234,11 +235,12 @@ process."
     create_mkinitcpio_sb_hook
 
     msg "To trigger both hooks, we will run \"pacman -S systemd\" and
-\"bootctl update\". The first command will run the hook, trigger bootloader
-signing as well as rebuilding the kernel, which in turn will also run the
-mkinitcpio hook and through that trigger signing of the UKI. \"bootctl update\"
-will copy the updated (signed) bootloader EFI binary to the EFI system
-partition."
+\"bootctl install\".
+Installing systemd will run the pacman hook, which will trigger signing of the
+bootloader binaries. A default pacman hook will also be run, which will trigger
+rebuilding the UKIs. After that is done, our mkinitcpio hook will run and sign
+the UKI. \"bootctl install\" will copy the updated (signed) bootloader EFI binary
+to the EFI system partition."
     pause
     pacman -S systemd || exit 1
     bootctl update || exit 1
@@ -307,6 +309,7 @@ process."
 Microsoft's keys should be bootable. The firmware will also enable Secure Boot
 user mode on the next reboot. Without signing the kernel and the bootloader, the
 system will fail to boot. So let's do that next."
+    pause
     sign_bootloader_ukis
 
     msg "That concludes the Secure Boot setup. You should now reboot the system and run

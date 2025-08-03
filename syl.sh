@@ -88,6 +88,7 @@ pause() {
     prompt="$1"
     test -z "$prompt" && prompt="Press any key to continue."
     read -n1 -srp "$prompt"
+    echo ""
 }
 
 test_root() {
@@ -337,7 +338,7 @@ mount_system() {
     done
 
     msg "Mounting EFI system partition..."
-    mount --mkdir "$efi" /mnt/boot
+    mount --mkdir -o fmask=0077,dmask=0077 "$efi" /mnt/boot
 }
 
 test_on_live_system() {
