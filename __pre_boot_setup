@@ -319,6 +319,23 @@ iwd for wireless access."
     ask_y_n "Would you like to continue?" continue skip && achroot passwd
 }
 
+add_hook() {
+    local hook_line hook before
+    hook_line="$1"
+    hook="$2"
+    before="$3"
+    grep -q "$hook" <<< "$hook_line" || hook_line="${hook_line/"$before"/"$hook" "$before"}"
+    echo -n "$hook_line"
+}
+
+remove_hook() {
+    local hook_line hook
+    hook_line="$1"
+    hook="$2"
+    grep -q "$hook" <<< "$hook_line" || hook_line="${hook_line/"$hook" /}"
+    echo -n "$hook_line"
+}
+
 adapt_hooks() {
     local hooks sdv_hook
     hooks="$(grep '^HOOKS' "$1")"
@@ -326,16 +343,18 @@ adapt_hooks() {
     ask_y_n "Will you be using a non-standard keymap or console font?" && sdv_hook="sd-vconsole"
 
     if achroot pacman -Qqs -- '-ucode$' >/dev/null 2>&1; then
-        grep -q microcode <<< "$hooks" || hooks="${hooks/autodetect/autodetect microcode}"
+        hooks="$(add_hook "$hooks" microcode modconf)"
     fi
 
     # remove udev as it is supplanted by systemd hook
-    grep -q udev <<< "$hooks" && hooks="${hooks/udev /}"
-    grep -q systemd <<< "$hooks" || hooks="${hooks/autodetect/systemd autodetect}"
-    grep -q keyboard <<< "$hooks" || hooks="${hooks/block/keyboard block}"
-    # TODO: remove hooks supplanted by sd-vconsole
-    test -n "$sdv_hook" && grep -q "$sdv_hook" <<< "$hooks" || hooks="${hooks/block/$sdv_hook block}"
-    grep -q sd-encrypt <<< "$hooks" || hooks="${hooks/filesystems/sd-encrypt filesystems}"
+    hooks="$(remove_hook "$hooks" udev)"
+    hooks="$(add_hook "$hooks" systemd autodetect)"
+    hooks="$(add_hook "$hooks" keyboard block)"
+    # remove keymap and consolefont as they are also supplanted by systemd
+    hooks="$(remove_hook "$hooks" keymap)"
+    hooks="$(remove_hook "$hooks" consolefont)"
+    test -n "$sdv_hook" && hooks="$(add_hook "$hooks" "$sdv_hook" block)"
+    hooks="$(add_hook "$hooks" sd-encrypt filesystems)"
 
     sed -i 's/^HOOKS=.*/'"$hooks"'/' "$1" || exit 1
 }

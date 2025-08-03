@@ -303,9 +303,9 @@ tab_display() {
     count=0
     for i in "$@"; do
         printf "%-20s" "$i" >&2
-        (( (++count % 4) == 0)) && msg ""
+        (( (++count % 4) == 0)) && echo ""
     done
-    (( count % 4 > 0 )) && msg ""
+    (( count % 4 > 0 )) && echo ""
 }
 
 select_item() {
@@ -396,7 +396,7 @@ stage of the installation process."
 }
 
 step() {
-    msg ""
+    echo ""
 
     case "$1" in
         1)
@@ -531,7 +531,7 @@ feel free to skip this step."
             ask_for_skip && setup_sboot
             ;;
     esac
-    msg ""
+    echo ""
 }
 # --- end functions
 

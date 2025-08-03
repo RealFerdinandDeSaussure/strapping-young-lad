@@ -104,9 +104,9 @@ encrypt_p() {
 
     while true; do
         read -rsp "  Please give an encryption password for $part: " pw
-        msg ""
+        echo ""
         read -rsp "  Please repeat the password for $part: " pw_bckp
-        msg ""
+        echo ""
         test "$pw" = "$pw_bckp" && break
         msg "Passwords do not match. Please try again."
     done
