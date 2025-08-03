@@ -74,6 +74,14 @@ ms_sign() {
     sbsiglist --owner "$MS_GUID" --type x509 --output "$2" "$1" || exit 1
 }
 
+download_from_ms() {
+    local url fn
+    url="$1"
+    fn="$(basename "$url")"
+    fn="$(printf "%b" "${fn//%/\\x}")"
+    curl -Lo "$fn" "$url"
+}
+
 create_ms_db() {
     local personal_key_dir cwd
     declare -a urls
@@ -94,7 +102,7 @@ database. This requires downloading a couple of certificates from their
 website."
     pause
     for u in "${urls[@]}"; do
-        curl -LO "$u"
+        download_from_ms "$u"
     done
     msg "Creating signature lists..."
     ms_sign "MicWinProPCA2011_2011-10-19.crt" "MS_Win_db_2011.esl"
