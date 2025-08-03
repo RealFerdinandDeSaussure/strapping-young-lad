@@ -11,6 +11,7 @@ set_time() {
         test -d "$i" && items+=("$(basename "$i")")
     done
     msg "First, select a region:"
+    tab_display "${items[@]}"
     region=$(select_item "${items[@]}")
 
     items=()
@@ -18,6 +19,7 @@ set_time() {
         test -f "$i" && items+=("$(basename "$i")")
     done
     msg "Now, select a city:"
+    tab_display "${items[@]}"
     city=$(select_item "${items[@]}")
 
     msg "Setting $region/$city as local time..."
@@ -44,6 +46,7 @@ Only UTF-8 locales are supported by this script."
     done < <(sed -rn 's/^#(\S+\s\S+)/\1/p' /mnt/etc/locale.gen)
     while true; do
         if ask_y_n "Do you wish to add more locales?"; then
+            tab_display "${items[@]}"
             locales+=("$(select_item "${items[@]}") UTF-8")
         else
             break
@@ -59,6 +62,7 @@ Only UTF-8 locales are supported by this script."
     while read -r line; do
         items+=("$line")
     done < <(sed -rn 's/^([^#]\S+).+/\1/p' /mnt/etc/locale.gen)
+    tab_display "${items[@]}"
     system_locale="$(select_item "${items[@]}")"
     achroot localectl set-locale LANG="$system_locale" || exit 1
 }
@@ -83,6 +87,7 @@ set_vcons_kl() {
         layouts+=("$line")
     done < <(localectl list-keymaps)
 
+    tab_display "${layouts[@]}"
     echo "KEYMAP=$(select_item "${layouts[@]}" | xargs)" > /mnt/etc/vconsole.conf || exit 1
 }
 
@@ -333,7 +338,7 @@ remove_hook() {
     local hook_line hook
     hook_line="$1"
     hook="$2"
-    grep -q "$hook" <<< "$hook_line" || hook_line="${hook_line/"$hook" /}"
+    grep -q "$hook" <<< "$hook_line" && hook_line="${hook_line/"$hook" /}"
     echo -n "$hook_line"
 }
 
@@ -397,7 +402,7 @@ you can still choose to specify the root partition explicitly."
     msg "Before looking at the generated file, here's an overview of the kernel
 options included:"
     test $gpt_automount = 0 && msg "    - root: the root partition (i.e. the mapping of the unlocked cryptdevice)"
-    msg "    - rootflags: options for mounting the root partitions - for our setup, this
+    echo "    - rootflags: options for mounting the root partitions - for our setup, this
                  is important as this is where we specify the root subvolume
     - rw: read/write access (this is required for the root partition)
     - quiet: suppress output when booting
@@ -454,7 +459,7 @@ sd-vconsole hook.
 
 Additionally, we will be adding the btrfs binary to the initial ramdisk so we
 have access to it in emergency mode."
-    cp -v /mnt/etc/mkinitcpio.conf "$mkcp_conf"
+    cp /mnt/etc/mkinitcpio.conf "$mkcp_conf"
 
     source <(grep "^BINARIES" "$mkcp_conf")
     BINARIES+=("btrfs")
@@ -466,7 +471,7 @@ have access to it in emergency mode."
 additional edits if desired."
     pause
     edit_file "$mkcp_conf"
-    cp -v "$mkcp_conf" /mnt/etc/mkinitcpio.conf
+    cp "$mkcp_conf" /mnt/etc/mkinitcpio.conf
 
     msg "Now, we will edit the mkinitcpio preset file(s). Not much custom input should be
 required here. You can comment out the default_options line if you would like to
@@ -538,7 +543,7 @@ timeout menu-hidden
 editor false
 console-mode max" > "$loader_conf"
 
-    msg "\nThe bootloader was installed succesfully. systemd-boot will automatically
+    msg "The bootloader was installed succesfully. systemd-boot will automatically
 generate entries for Windows, macOS (I hope that's the right name) and all .efi
 files in /boot/EFI/Linux. You can customize the bootloader config further, if
 you would like. Here's an overview of the settings included right now:

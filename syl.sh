@@ -300,17 +300,25 @@ system. Some common choices would be:
 
 tab_display() {
     local count
+    declare -a output
     count=0
+    output=("")
     for i in "$@"; do
-        printf "%-20s" "$i" >&2
-        (( (++count % 4) == 0)) && echo "" >&2
+        output[-1]+="$(printf "%-20s" "$i")"
+        (( (++count % 4) == 0)) && output+=("")
     done
-    (( count % 4 > 0 )) && echo "" >&2
+    # (( count % 4 > 0 )) && output+=("")
+
+    if [ ${#output[@]} -gt $(($(tput lines) - 1)) ]; then
+        printf "%s\n" "${output[@]}" | less
+    else
+        printf "%s\n" "${output[@]}"
+    fi
+
 }
 
 select_item() {
     local answer
-    tab_display "$@"
     while true; do
         read -rp "  Please enter one of the above (honoring case): " answer
         for i in "$@"; do
