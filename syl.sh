@@ -395,7 +395,7 @@ let's make sure."
 shut down the computer, remove the installation medium and turn the system back
 on. After entering your encryption password, you should be taken to the tty
 login screen where you can login as root.
-Once logged in as root, run ./syl.sh 9 to continue the setup.
+Once logged in as root, run strapping-young-lad/syl.sh 9 to continue the setup.
 
 If you wish to set up Secure Boot later on, you can also enter Secure Boot setup
 mode before booting into the system. However, you may also do this at a later
@@ -559,8 +559,12 @@ Greetings! Let's install \033[34mArchLinux\033[37m!
                 exit 1
             elif ((STEP < 9)) && ! test_on_live_system; then
                 msg_bold -e "WARNING: Step $STEP is intended to be run from Arch live media.\n"
+                echo "Run \"$0 9\" instead to start the portion of the script that is intended for the
+new system."
+                pause
             elif ((STEP > 8)) && test_on_live_system; then
                 msg_bold -e "WARNING: Step $STEP is intended to be run from the installed system.\n"
+                pause
             fi
             ;;
         *)

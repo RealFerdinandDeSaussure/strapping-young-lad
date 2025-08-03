@@ -131,7 +131,7 @@ website."
     cat "MS_Win_KEK_2011.esl" "MS_Win_KEK_2023.esl" > MS_Win_KEK.esl
 
     sign-efi-sig-list -a -g "$MS_GUID" -k "$personal_key_dir"/KEK.key -c "$personal_key_dir"/KEK.crt db MS_db.esl add_MS_db.auth || exit 1
-    sign-efi-sig-list -a -g "$MS_GUID" -k "$personal_key_dir"/PK.key -c "$personal_key_dir"/PK.crt KEK MS_Win_KEK.esl add_MS_Win_KEK.esl || exit 1
+    sign-efi-sig-list -a -g "$MS_GUID" -k "$personal_key_dir"/PK.key -c "$personal_key_dir"/PK.crt KEK MS_Win_KEK.esl add_MS_Win_KEK.auth || exit 1
 
     cd "$cwd" || exit 1
 }
