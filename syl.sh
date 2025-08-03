@@ -69,7 +69,7 @@ msg() {
         args="$args $1"
         shift
     done
-    echo -e $args "$1" >&2
+    echo -e $args "\n$1" >&2
 }
 
 awk_calc() {
@@ -104,7 +104,7 @@ test_root() {
 
 test_uefi() {
     local fw_platform_size
-    msg -n "Are we in UEFI mode? "
+    echo -n "Are we in UEFI mode? "
     # debug: will commenting the following line out get rid of bash language server crashing?
     fw_platform_size=$(cat /sys/firmware/efi/fw_platform_size)
     if [[ "$fw_platform_size" = "64" ]]; then
@@ -118,7 +118,7 @@ test_uefi() {
 }
 
 test_internet() {
-    msg -n "Are we connected to the internet? "
+    echo -n "Are we connected to the internet? "
     if ping -c 1 -w 5 8.8.8.8 >/dev/null 2>&1; then
         msg_bold "Yes."
         return
@@ -129,7 +129,7 @@ test_internet() {
 }
 
 test_mountpoint() {
-    msg -n "Partition mounted at $1? "
+    echo -n "Partition mounted at $1? "
     if findmnt "$1" >/dev/null 2>&1; then
         msg_bold "Yes."
         return
@@ -140,7 +140,7 @@ test_mountpoint() {
 }
 
 test_tpm() {
-    msg -n "Do we have TPM2.0 support? "
+    echo -n "Do we have TPM2.0 support? "
     if systemd-analyze has-tpm2 >/dev/null 2>&1; then
         msg_bold "Yes."
         return
@@ -229,8 +229,7 @@ get_largest_empty_blk_in_m() {
 
 prompt_for_extra_pkgs() {
     declare -a pkgs
-    msg "
-Please answer the following questions. The package that will be installed if you
+    msg "Please answer the following questions. The package that will be installed if you
 answer 'Yes' is given in parentheses for each question."
 
     for cpu in amd intel; do
@@ -271,8 +270,7 @@ bootstrap() {
 
     pkgs+="$(prompt_for_extra_pkgs)"
 
-    msg "
-If desired, you can specify additional packages you would like to install on the
+    msg "If desired, you can specify additional packages you would like to install on the
 system. Some common choices would be:
     - man-db
     - man-pages
@@ -361,12 +359,10 @@ test_system_mounted() {
     efi_query="SOURCE == \"$efi\" && TARGET == \"/mnt/boot\""
 
     if [ -z "$(findmnt -Q "$root_query")" ]; then
-        msg "
-root partition $root is not mounted at /mnt. Mount it before continuing."
+        msg "root partition $root is not mounted at /mnt. Mount it before continuing."
         return 1
     elif [ -z "$(findmnt -Q "$efi_query")" ]; then
-        msg "
-EFI system partition $efi not mounted at /mnt/boot. Mount it before continuing."
+        msg "EFI system partition $efi not mounted at /mnt/boot. Mount it before continuing."
         return 1
     else
         return 0
@@ -376,21 +372,18 @@ EFI system partition $efi not mounted at /mnt/boot. Mount it before continuing."
 prepare_for_reboot() {
     local swap
     test_system_mounted || exit 1
-    msg "
-First, we will need git on the live medium. It is probably already installed but
+    msg "First, we will need git on the live medium. It is probably already installed but
 let's make sure."
     pacman -Sy --needed git
 
     msg "Cloning to new system..."
     git clone "https://github.com/Pu-Anlai/strapping-young-lad" /mnt/root/strapping-young-lad
 
-    msg "
-Unmounting the system from /mnt..."
+    msg "Unmounting the system from /mnt..."
     swapoff -a
     umount -R /mnt
 
-    msg "
-This concludes the installation process from the live medium. Next, you should
+    msg "This concludes the installation process from the live medium. Next, you should
 shut down the computer, remove the installation medium and turn the system back
 on. After entering your encryption password, you should be taken to the tty
 login screen where you can login as root.
@@ -572,8 +565,7 @@ Greetings! Let's install \033[34mArchLinux\033[37m!
     test_uefi || exit 1
     test_internet || exit 1
 
-    msg "
-(Replies to prompts do not need to be written out completely.)"
+    msg "(Replies to prompts do not need to be written out completely.)"
 
     for s in $(seq "$STEP" "$STEPS"); do
         step "$s"

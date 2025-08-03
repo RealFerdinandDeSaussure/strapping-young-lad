@@ -26,8 +26,7 @@ backup_sb_efivars() {
 
     test ${#bckps[@]} -eq 4 && return
 
-    msg "
-Before we start, we will backup the current Secure Boot EFI variables to
+    msg "Before we start, we will backup the current Secure Boot EFI variables to
 ${bckp_folder}."
 
     msg "Backing up Secure Boot efivars..."
@@ -190,8 +189,7 @@ To make sure that both the pacman and mkinitcpio hook are working, we will not
 sign anything manually but create the hooks and use them to trigger the signing
 process."
 
-    msg "
-Creating pacman hook..."
+    msg "Creating pacman hook..."
     create_pacman_sb_hook
     msg "To trigger the hook, we will run \"pacman -S systemd\" and
 \"bootctl update\". The first command will trigger the hook, the second will
@@ -200,8 +198,7 @@ copy the updated (signed) bootloader EFI binary to the EFI system partition."
     pacman -S systemd || exit 1
     bootctl update || exit 1
 
-    msg "
-Creating mkinitcpio hook..."
+    msg "Creating mkinitcpio hook..."
     create_mkinitcpio_sb_hook
     msg "To trigger the hook, we will rebuild the UKI. The hook will run after the build
 process has finished and sign the generated UKI."
@@ -250,8 +247,7 @@ or delete PK. After rebooting run ./syl.sh 10 to continue at the current step.
     create_sb_keyset "$sb_dir"
     create_ms_db "$ms_dir" "$sb_dir"
 
-    msg "
-Okay, now that that is all done, let's finally enroll our and Microsoft's keys."
+    msg "Okay, now that that is all done, let's finally enroll our and Microsoft's keys."
     enroll_keys "$sb_dir" "$ms_dir"
 
     msg "The keys have been enrolled. At this point, all EFI binaries signed with
@@ -260,8 +256,7 @@ user mode on the next reboot. Without signing the kernel and the bootloader, the
 system will fail to boot. So let's do that next."
     sign_bootloader_ukis
 
-    msg "
-That concludes the Secure Boot setup. You should now reboot the system and run
+    msg "That concludes the Secure Boot setup. You should now reboot the system and run
 this step again by executing ./syl.sh 10. If everything went as expected, the
 script will let you know that Secure Boot is already active after you agree to
 continue with the step."
@@ -275,8 +270,7 @@ rulesets."
 
     pacman -Sy --needed ufw || exit 1
 
-    msg "
-We will set up ufw to deny ALL incoming traffic and let all outgoing traffic
+    msg "We will set up ufw to deny ALL incoming traffic and let all outgoing traffic
 through. For applications like cloud services, Syncthing, SSH or Torrent
 seeders, you will need to adapt the ufw setup later. Oftentimes, this can be
 done by simply running \"ufw allow [application]\"."

@@ -17,8 +17,7 @@ set_time() {
     for i in /mnt/usr/share/zoneinfo/"$region"/[A-Z]*; do
         test -f "$i" && items+=("$(basename "$i")")
     done
-    msg "
-Now, select a city:"
+    msg "Now, select a city:"
     city=$(select_item "${items[@]}")
 
     msg "Setting $region/$city as local time..."
@@ -56,8 +55,7 @@ Only UTF-8 locales are supported by this script."
     achroot locale-gen || exit 1
 
     items=()
-    msg "
-Choose the system locale among the ones you previously selected."
+    msg "Choose the system locale among the ones you previously selected."
     while read -r line; do
         items+=("$line")
     done < <(sed -rn 's/^([^#]\S+).+/\1/p' /mnt/etc/locale.gen)
@@ -139,8 +137,7 @@ RouteMetric=100 " >> "$c"
         done
     fi
 
-    msg "
-There are a couple of improvements over the basic systemd provided network files
+    msg "There are a couple of improvements over the basic systemd provided network files
 that can be set up in addition. These include:
     - Multicast/MulticastDNS support
     - making systemd wait for a routable IP address
@@ -160,8 +157,7 @@ options edns0" >> /mnt/etc/resolv.conf
         achroot systemctl enable dnscrypt-proxy.service || exit 1
     fi
 
-    msg "
-Enabling systemd network services..."
+    msg "Enabling systemd network services..."
     achroot systemctl enable systemd-networkd.service || exit 1
     if [ -n "$wifi_serv" ]; then
         achroot systemctl enable iwd.service || exit 1
@@ -299,33 +295,27 @@ For this, we will open it using \$EDITOR."
         edit_file /mnt/etc/fstab
     fi
 
-    msg "
-On to time settings. Please note that your system's hardware clock needs to be
+    msg "On to time settings. Please note that your system's hardware clock needs to be
 set to UTC for this to work correctly."
     ask_y_n "Would you like to continue?" continue skip && set_time
 
-    msg "
-Now, locale settings."
+    msg "Now, locale settings."
     ask_y_n "Would you like to continue?" continue skip && set_locales
 
-    msg "
-If you are using a keyboard layout other than the default US one, you can set
+    msg "If you are using a keyboard layout other than the default US one, you can set
 it as default for the virtual console. This will most likely not affect the
 keyboard settings in a desktop environment."
     ask_y_n "Would you like to specify a custom keyboard layout?" && set_vcons_kl
 
-    msg "
-Select a hostname next. In line with RFC 1178, a hostname should only include
+    msg "Select a hostname next. In line with RFC 1178, a hostname should only include
 lowercase letters, digits and dashes (but not at the beginning)."
     ask_y_n "Would you like to continue?" continue skip && set_hostname
 
-    msg "
-For network access on the new system, we will use systemd-networkd for wired and
+    msg "For network access on the new system, we will use systemd-networkd for wired and
 iwd for wireless access."
     ask_y_n "Would you like to continue?" continue skip && setup_network
 
-    msg "
-Finally, we will run passwd on the new system to set its root password."
+    msg "Finally, we will run passwd on the new system to set its root password."
     ask_y_n "Would you like to continue?" continue skip && achroot passwd
 }
 
@@ -359,13 +349,11 @@ generate_kcmdline() {
     get_config_var ROOT_ENCRYPTED_NAME
     cryptroot="${config_vars[ROOT_ENCRYPTED_NAME]}"
 
-    msg "
-Next, we will generate the kernel command line, which will be integrated into
+    msg "Next, we will generate the kernel command line, which will be integrated into
 the UKI."
 
     if [ "$(get_part_parent "$efi")" = "$(get_part_parent "$root")" ]; then
-        msg "
-systemd supports automounting the root partition (other partitions as well but
+        msg "systemd supports automounting the root partition (other partitions as well but
 for those we are using subvolumes), which makes things easier to maintain in the
 long run.
 The encrypted partition will be provided as /dev/gpt-auto-root-luks, the
@@ -408,8 +396,7 @@ create_crypttab_initramfs() {
     get_config_var ROOT_PARTITION
     root="${config_vars[ROOT_PARTITION]}"
 
-    msg "
-The last step for creating a UKI is setting up crypttab.initramfs. This is a
+    msg "The last step for creating a UKI is setting up crypttab.initramfs. This is a
 crypttab file that will be added to the image and will be used at boot time to
 unlock any encrypted devices listed in it."
 
@@ -439,8 +426,7 @@ setup_mkinitcpio() {
     local BINARIES mkcp_conf hooks uki_folder
     mkcp_conf="$(mktemp)"
     
-    msg "
-Let's get started! First, we will add additional hooks to the mkinitcpio config.
+    msg "Let's get started! First, we will add additional hooks to the mkinitcpio config.
 These are required for unlocking the root partition at boot time. If you are
 using a non-US console keymap or a non-default console font (you aren't if you
 have only been following this script so far), we also need to add the
@@ -456,15 +442,13 @@ have access to it in emergency mode."
 
     adapt_hooks "$mkcp_conf"
 
-    msg "
-Let's have a look at the edited mkinitcpio.conf. Check it for errors and make
+    msg "Let's have a look at the edited mkinitcpio.conf. Check it for errors and make
 additional edits if desired."
     pause
     edit_file "$mkcp_conf"
     cp "$mkcp_conf" /mnt/etc/mkinitcpio.conf
 
-    msg "
-Now, we will edit the mkinitcpio preset file(s). Not much custom input should be
+    msg "Now, we will edit the mkinitcpio preset file(s). Not much custom input should be
 required here. You can comment out the default_options line if you would like to
 suppress the splash boot image.
 
@@ -475,8 +459,7 @@ system partition. If you put them in a different location, you will have to
 create the corresponding entries manually."
 
     for p in /mnt/etc/mkinitcpio.d/*.preset; do
-        msg "
-Editing $p..."
+        msg "Editing $p..."
         pause
         for i in default_uki fallback_uki default_options; do
             sed -ri 's/^#('"${i}"'=)/\1/' "$p" || exit 1
@@ -489,8 +472,7 @@ Editing $p..."
 
     create_crypttab_initramfs
 
-    msg "
-Now let's create our unified kernel image(s)."
+    msg "Now let's create our unified kernel image(s)."
     for p in /mnt/etc/mkinitcpio.d/*.preset; do
         uki_folder="$(grep '^default_uki=' "$p" | cut -d= -f2 | tr -d '"')"
         if [ -z "$uki_folder" ]; then
@@ -570,7 +552,6 @@ extensions during the boot process."
 
     setup_mkinitcpio
 
-    msg "
-Now, let's install the bootloader."
+    msg "Now, let's install the bootloader."
     install_bootloader
 }
