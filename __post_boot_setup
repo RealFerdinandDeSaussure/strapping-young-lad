@@ -159,7 +159,9 @@ enroll_keys() {
         chattr -i "$k"
     done
     sbkeysync --keystore "$sbsign_dir" || signing_fail
+    msg "Key Exchange Keys enrolled."
     efi-updatevar -f "${sbsign_dir}/PK/PK.auth" PK || signing_fail
+    msg "Platform Key enrolled."
 
     shopt -u nullglob
 }
