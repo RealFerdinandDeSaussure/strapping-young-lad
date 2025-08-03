@@ -196,9 +196,9 @@ NeedsTargets' > "${hook_dir}/80-secureboot.hook"
 }
 
 create_mkinitcpio_sb_hook() {
-    local hook_dir
-    hook_dir=/etc/initcpio/post
-    mkdir -p "$hook_dir" || exit 1
+    local hook
+    hook=/etc/initcpio/post/uki-sbsign
+    mkdir -p "$(dirname $hook)" || exit 1
 
     # shellcheck disable=2016
     echo '#!/usr/bin/env bash
@@ -213,7 +213,8 @@ for (( i=0; i<${#keypairs[@]}; i+=2 )); do
     if ! sbverify --cert "$cert" "$uki" &>/dev/null; then
         sbsign --key "$key" --cert "$cert" --output "$uki" "$uki"
     fi
-done' > "${hook_dir}/uki-sbsign"
+done' > "$hook"
+    chmod +x "$hook"
 }
 
 sign_bootloader_ukis() {
