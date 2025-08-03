@@ -303,9 +303,9 @@ tab_display() {
     count=0
     for i in "$@"; do
         printf "%-20s" "$i" >&2
-        (( (++count % 4) == 0)) && echo ""
+        (( (++count % 4) == 0)) && echo "" >&2
     done
-    (( count % 4 > 0 )) && echo ""
+    (( count % 4 > 0 )) && echo "" >&2
 }
 
 select_item() {
@@ -342,7 +342,7 @@ mount_system() {
 }
 
 test_on_live_system() {
-    if [ "$(findmnt -no SOURCE)" = airootfs ]; then
+    if [ "$(findmnt -no SOURCE /)" = airootfs ]; then
         return 0
     else
         return 1
@@ -551,7 +551,7 @@ Greetings! Let's install \033[34mArchLinux\033[37m!
                 exit 1
             elif ((STEP < 9)) && ! test_on_live_system; then
                 msg_bold -e "WARNING: Step $STEP is intended to be run from Arch live media.\n"
-            elif test_on_live_system; then
+            elif ((STEP > 8)) && test_on_live_system; then
                 msg_bold -e "WARNING: Step $STEP is intended to be run from the installed system.\n"
             fi
             ;;

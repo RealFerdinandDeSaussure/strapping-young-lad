@@ -214,7 +214,7 @@ create_zram() {
     local zram_conf zram_dev
     zram_conf=/mnt/etc/systemd/zram-generator.conf
 
-    msg -e "\nGenerating zram-generator config file..."
+    msg "Generating zram-generator config file..."
     echo "[zram0]
 zram-size = min(ram / 2, 4096)
 compression-algorithm = zstd" > "$zram_conf"
@@ -228,12 +228,13 @@ zstd will be used for compression."
     # in case the user has added additional zram devices
     while read -r line; do
         zram_dev="${line:1:-1}"
-        msg "Enabling systemd service for $zram_dev"
+        msg "Enabling systemd service for ${zram_dev}..."
         achroot systemctl enable systemd-zram-setup@"$zram_dev".service
     done < <(grep -E '^\[.+?\]$' "$zram_conf")
 }
 
 create_swap_zram() {
+    # TODO: use zswap when using hibernation
     local hib zram ram_kb ram_gb rec
     ram_kb="$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)"
     ram_gb="$(awk_calc "$ram_kb / 1024 / 1024")"
