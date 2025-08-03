@@ -26,7 +26,8 @@ backup_sb_efivars() {
 
     test ${#bckps[@]} -eq 4 && return
 
-    msg "Before we start, we will backup the current Secure Boot EFI variables to
+    msg "
+Before we start, we will backup the current Secure Boot EFI variables to
 ${bckp_folder}."
 
     msg "Backing up Secure Boot efivars..."
@@ -223,7 +224,7 @@ Before, we start let's install a couple of packages that we will need in the
 process."
     pause
 
-    pacman -Sy --needed efitools sbkeysync sbsigntolls || exit 1
+    pacman -Sy --needed efitools sbsigntools || exit 1
 
     backup_sb_efivars
 
@@ -276,6 +277,4 @@ done by simply running \"ufw allow [application]\"."
     ufw default deny incoming
     msg "Enabling ufw..."
     ufw enable
-
-    setup_sboot
 }

@@ -151,7 +151,7 @@ that can be set up in addition. These include:
         test -n "$wifi_serv" && create_net_dropin "$wifi_serv" "$wifi_custom"
     fi
 
-    if pacman -Q dnscrypt-proxy >/dev/null 2>&1; then
+    if achroot pacman -Q dnscrypt-proxy >/dev/null 2>&1; then
         msg "Setting up dnscrypt-proxy for local DNS resolving..."
         sed -ri 's/^listen_addresses.+$/listen_addresses = ['\''127.0.0.1:53'\'', '\''[::1]:53'\'']/' /mnt/etc/dnscrypt-proxy/dnscrypt-proxy.toml
         echo "nameserver ::1
@@ -294,7 +294,7 @@ system table."
         genfstab -U /mnt >> /mnt/etc/fstab || exit 1
         msg "The fstab file was successfully created. However, it is recommended to check it
 manually for errors.
-For this, we will open it using the application set as \$EDITOR."
+For this, we will open it using \$EDITOR."
         pause
         edit_file /mnt/etc/fstab
     fi
@@ -310,9 +310,9 @@ Now, locale settings."
 
     msg "
 If you are using a keyboard layout other than the default US one, you can set
-it as the default layout for the virtual console. This will most likely not
-affect the keyboard settings in a desktop environment."
-    ask_y_n "Would you like to continue and specify a custom keyboard layout?" continue skip && set_vcons_kl
+it as default for the virtual console. This will most likely not affect the
+keyboard settings in a desktop environment."
+    ask_y_n "Would you like to specify a custom keyboard layout?" && set_vcons_kl
 
     msg "
 Select a hostname next. In line with RFC 1178, a hostname should only include
@@ -343,6 +343,7 @@ adapt_hooks() {
     grep -q udev <<< "$hooks" && hooks="${hooks/udev /}"
     grep -q systemd <<< "$hooks" || hooks="${hooks/autodetect/systemd autodetect}"
     grep -q keyboard <<< "$hooks" || hooks="${hooks/block/keyboard block}"
+    # TODO: remove hooks supplanted by sd-vconsole
     test -n "$sdv_hook" && grep -q "$sdv_hook" <<< "$hooks" || hooks="${hooks/block/$sdv_hook block}"
     grep -q sd-encrypt <<< "$hooks" || hooks="${hooks/filesystems/sd-encrypt filesystems}"
 
@@ -359,7 +360,8 @@ generate_kcmdline() {
     cryptroot="${config_vars[ROOT_ENCRYPTED_NAME]}"
 
     msg "
-Next, we will generate the kernel command line, which will be integrated into the UKI."
+Next, we will generate the kernel command line, which will be integrated into
+the UKI."
 
     if [ "$(get_part_parent "$efi")" = "$(get_part_parent "$root")" ]; then
         msg "
@@ -384,8 +386,7 @@ you can still choose to specify the root partition explicitly."
         config_vars[GPT_AUTOMOUNT]=$gpt_automount
     fi
    
-    msg "
-Before looking at the generated file, here's an overview of the kernel
+    msg "Before looking at the generated file, here's an overview of the kernel
 options included:"
     test $gpt_automount = 0 && msg "    - root: the root partition (i.e. the mapping of the unlocked cryptdevice)"
     msg "    - rootflags: options for mounting the root partitions - for our setup, this
@@ -408,9 +409,9 @@ create_crypttab_initramfs() {
     root="${config_vars[ROOT_PARTITION]}"
 
     msg "
-The last step for creating an UKI is setting up crypttab.initramfs. This is a
-crypttab file that will be added to the UKI and will be used to unlock the
-encrypted devices listed in it."
+The last step for creating a UKI is setting up crypttab.initramfs. This is a
+crypttab file that will be added to the image and will be used at boot time to
+unlock any encrypted devices listed in it."
 
     if [ "$gpt_automount" = 1 ]; then
         msg "As you have set up automounting, you can entirely ignore this file. However, if
@@ -418,7 +419,7 @@ you have set up additional unlock methods for your encrypted partitions,
 crypttab.initramfs is a good place to specify them (the other place would be the
 kernel commandline). We will come back to enrolling other keys and adding them
 to crypttab.initramfs once we have booted into the new system."
-        ask_y_n "Would you nevertheless like to make use of crypttab.initramfs now?" || return
+        ask_y_n "Nevertheless, would you like to edit crypttab.initramfs now?" || return
     else
         pause
     fi
@@ -518,6 +519,7 @@ install_bootloader() {
     local default loader_conf
     loader_conf=/mnt/boot/loader/loader.conf
 
+    msg "Running \"bootctl install\"..."
     achroot bootctl install || exit 1
     msg "Enabling automatic bootloader updates..."
     achroot systemctl enable systemd-boot-update.service || exit 1
@@ -535,7 +537,7 @@ editor false
 console-mode max" > "$loader_conf"
 
     msg "\nThe bootloader was installed succesfully. systemd-boot will automatically
-generate entries for Windows, macOS (I hope I got the name right) and all .efi
+generate entries for Windows, macOS (I hope that's the right name) and all .efi
 files in /boot/EFI/Linux. You can customize the bootloader config further, if
 you would like. Here's an overview of the settings included right now:
     - default: the default entry to boot; set to a value determined by the

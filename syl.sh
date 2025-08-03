@@ -305,9 +305,9 @@ tab_display() {
     count=0
     for i in "$@"; do
         printf "%-20s" "$i" >&2
-        (( (++count % 6) == 0)) && msg ""
+        (( (++count % 4) == 0)) && msg ""
     done
-    (( count % 6 > 0 )) && msg ""
+    (( count % 4 > 0 )) && msg ""
 }
 
 select_item() {
@@ -521,7 +521,7 @@ more daunting (and optional) task of installing Secure Boot."
 Using Secure Boot requires signing different parts of the bootchain and
 verifying their signature before execution.
 
-Device firmware can also be factory-signed and make use on Secure Boot for
+Device firmware can also be factory-signed and make use of Secure Boot for
 verification. The certificate used for signing in these cases will be the ones
 provided by Microsoft. For this reason, we will also enroll Microsoft's keys.
 This is non-optional as not doing so can run the risk of bricking your entire
