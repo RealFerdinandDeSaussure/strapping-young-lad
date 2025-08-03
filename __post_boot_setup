@@ -234,8 +234,8 @@ process."
     msg "Creating mkinitcpio hook..."
     create_mkinitcpio_sb_hook
 
-    msg "To trigger both hooks, we will run \"pacman -S systemd\" and
-\"bootctl install\".
+    msg "To trigger both hooks, we will run \"pacman -S systemd\" and \"bootctl
+install\".
 Installing systemd will run the pacman hook, which will trigger signing of the
 bootloader binaries. A default pacman hook will also be run, which will trigger
 rebuilding the UKIs. After that is done, our mkinitcpio hook will run and sign
@@ -243,12 +243,7 @@ the UKI. \"bootctl install\" will copy the updated (signed) bootloader EFI binar
 to the EFI system partition."
     pause
     pacman -S systemd || exit 1
-    bootctl update || exit 1
-
-    msg "To trigger the hook, we will rebuild the UKI. The hook will run after the build
-process has finished and sign the generated UKI."
-    pause
-    mkinitcpio -P || exit 1
+    bootctl install || exit 1
 }
 
 setup_sboot() {
