@@ -120,6 +120,8 @@ website."
 }
 
 enroll_keys() {
+    local sb_dir ms_dir sbsign_dir
+    declare -a keys
     sb_dir="$1"
     ms_dir="$2"
     sbsign_dir=/etc/secureboot/keys
@@ -127,8 +129,10 @@ enroll_keys() {
     msg "Copying keys to $sbsign_dir..."
     shopt -s nullglob
     for i in db dbx KEK PK; do
+        keys=({"$sb_dir","$ms_dir"}/*"${i}.auth")
         mkdir -p "${sbsign_dir}/${i}"
-        cp "${sb_dir}"/*"${i}.auth" "${ms_dir}"/*"${i}.auth" "${sbsign_dir}/${i}" || exit 1
+        test ${#keys[@]} -eq 0 && continue  # for dbx
+        cp "${keys[@]}" "${sbsign_dir}/${i}" || exit 1
     done
     shopt -u nullglob
 
