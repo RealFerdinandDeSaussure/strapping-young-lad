@@ -29,7 +29,7 @@ get_sb_mode() {
 backup_sb_efivars() {
     local bckp_folder
     declare -a bckps
-    bckp_folder="$HOME/EFIVAR_sb_backup"
+    bckp_folder="$HOME/sb-keys.backup"
     bckps=("$bckp_folder"/*)
 
     test ${#bckps[@]} -eq 4 && return
@@ -38,7 +38,7 @@ backup_sb_efivars() {
 ${bckp_folder}."
 
     msg "Backing up Secure Boot efivars..."
-    mkdir -p /root/EFIVAR_sb_backup
+    mkdir -p "$bckp_folder"
     for v in PK KEK db dbx; do
         efi-readvar -v $v -o "$bckp_folder/${v}.esl" || exit 1
     done
@@ -56,6 +56,15 @@ create_sb_key() {
     openssl x509 -outform DER -in "${fn}.crt" -out "${fn}.cer" || exit 1
     cert-to-efi-sig-list -g "$guid" "${fn}.crt" "${fn}.esl"  || exit 1
     sign-efi-sig-list -g "$guid" -k "${sign_base}.key" -c "${sign_base}.crt" "${fn}" "${fn}.esl" "${fn}.auth" || exit 1
+}
+
+store_sb_keyset() {
+    local sb_dir
+    sb_dir="$HOME/sb-keys"
+    msg "Storing generated keys in ${sb_dir}..."
+    mkdir -p "${sb_dir}"
+    cp -v "$sb_tmp_dir"/* "${sb_dir}"
+    echo "These keys are used for secure boot signing! Do not delete them!" > "${sb_dir}"/DO_NOT_DELETE
 }
 
 create_sb_keyset() {
@@ -149,7 +158,7 @@ enroll_keys() {
         keys=({"$sb_dir","$ms_dir"}/*"${i}.auth")
         mkdir -p "${sbsign_dir}/${i}"
         test ${#keys[@]} -eq 0 && continue  # for dbx
-        cp "${keys[@]}" "${sbsign_dir}/${i}" || exit 1
+        cp -v "${keys[@]}" "${sbsign_dir}/${i}" || exit 1
     done
 
     msg "All keys are now located at ${sbsign_dir}. We will now use sbkeysync to enroll them."
@@ -171,6 +180,7 @@ create_pacman_sb_hook() {
     hook_dir=/etc/pacman.d/hooks
     mkdir -p "$hook_dir" || exit 1
 
+    # shellcheck disable=2016
     echo '[Trigger]
 Operation = Install
 Operation = Upgrade
@@ -180,7 +190,7 @@ Target = usr/lib/systemd/boot/efi/systemd-boot*.efi
 [Action]
 Description = Signing systemd-boot EFI binary for Secure Boot
 When = PostTransaction
-Exec = /bin/sh -c '\''while read -r f; do /usr/bin/sbsign --key /etc/secureboot/keys/db/db.key --cert /etc/secureboot/keys/db/db.crt --output "${f}.signed" "$f"; done;'\''
+Exec = /bin/sh -c '\''while read -r f; do /usr/bin/sbsign --key /root/sb-keys/db.key --cert /root/sb-keys/db.crt --output "${f}.signed" "$f"; done;'\''
 Depends = sh
 NeedsTargets' > "${hook_dir}/80-secureboot.hook"
 }
@@ -190,16 +200,17 @@ create_mkinitcpio_sb_hook() {
     hook_dir=/etc/initcpio/post
     mkdir -p "$hook_dir" || exit 1
 
+    # shellcheck disable=2016
     echo '#!/usr/bin/env bash
 
 uki="$3"
 [[ -n "$uki" ]] || exit 0
 
-keypairs=(/etc/secureboot/keys/db/db.key /etc/secureboot/keys/db/db.crt)
+keypairs=(/root/sb-keys/db.key /root/sb-keys/db.crt)
 
 for (( i=0; i<${#keypairs[@]}; i+=2 )); do
     key="${keypairs[$i]}" cert="${keypairs[(( i + 1 ))]}"
-    if ! sbverify --cert "$cert" "$uki" &>/dev/null; then
+    if ! sbverify --cert "$cert" "$uki" &>/dev/null; then
         sbsign --key "$key" --cert "$cert" --output "$uki" "$uki"
     fi
 done' > "${hook_dir}/uki-sbsign"
@@ -210,24 +221,28 @@ sign_bootloader_ukis() {
 either systemd-boot or the kernel will trigger either a new EFI binary being
 copied to the EFI system partition or a rebuild of the associated UKI. Every
 time this happens, the respective files need to be resigned. To make this
-possible, we are using a mkinitcpio hook (for the UKI) and a pacman hook (for
+happen, we are using a mkinitcpio hook (for the UKI) and a pacman hook (for
 systemd-boot).
 
 To make sure that both the pacman and mkinitcpio hook are working, we will not
-sign anything manually but create the hooks and use them to trigger the signing
+sign anything manually but create the hooks and run them to trigger the signing
 process."
 
     msg "Creating pacman hook..."
     create_pacman_sb_hook
-    msg "To trigger the hook, we will run \"pacman -S systemd\" and
-\"bootctl update\". The first command will trigger the hook, the second will
-copy the updated (signed) bootloader EFI binary to the EFI system partition."
+    msg "Creating mkinitcpio hook..."
+    create_mkinitcpio_sb_hook
+
+    msg "To trigger both hooks, we will run \"pacman -S systemd\" and
+\"bootctl update\". The first command will run the hook, trigger bootloader
+signing as well as rebuilding the kernel, which in turn will also run the
+mkinitcpio hook and through that trigger signing of the UKI. \"bootctl update\"
+will copy the updated (signed) bootloader EFI binary to the EFI system
+partition."
     pause
     pacman -S systemd || exit 1
     bootctl update || exit 1
 
-    msg "Creating mkinitcpio hook..."
-    create_mkinitcpio_sb_hook
     msg "To trigger the hook, we will rebuild the UKI. The hook will run after the build
 process has finished and sign the generated UKI."
     pause
@@ -235,9 +250,9 @@ process has finished and sign the generated UKI."
 }
 
 setup_sboot() {
-    local sb_mode sb_dir ms_dir
-    sb_dir="$(mktemp -d)"
-    ms_dir="$(mktemp -d)"
+    local sb_mode sb_tmp_dir ms_tmp_dir
+    sb_tmp_dir="$(mktemp -d)"
+    ms_tmp_dir="$(mktemp -d)"
     sb_mode="$(get_sb_mode)"
 
     case "$sb_mode" in
@@ -270,8 +285,8 @@ or delete PK. After rebooting run ./syl.sh 10 to continue at the current step.
 have to go through this ordeal on your own.
 
 We are setting up Secure Boot before enrolling additional secrets for LUKS,
-because using the TPM as a secret often requires binding to the Secure Boot
-state (don't worry if you do not know what any of that means).
+because using the TPM as a secret in many cases requires binding to the Secure
+Boot state (don't worry if you do not know what any of that means).
 
 Before, we start let's install a couple of packages that we will need in the
 process."
@@ -281,11 +296,12 @@ process."
 
     backup_sb_efivars
 
-    create_sb_keyset "$sb_dir"
-    create_ms_db "$ms_dir" "$sb_dir"
+    create_sb_keyset "$sb_tmp_dir"
+    store_sb_keyset
+    create_ms_db "$ms_tmp_dir" "$sb_tmp_dir"
 
     msg "Okay, now that that is all done, let's finally enroll our and Microsoft's keys."
-    enroll_keys "$sb_dir" "$ms_dir"
+    enroll_keys "$sb_tmp_dir" "$ms_tmp_dir"
 
     msg "The keys have been enrolled. At this point, all EFI binaries signed with
 Microsoft's keys should be bootable. The firmware will also enable Secure Boot

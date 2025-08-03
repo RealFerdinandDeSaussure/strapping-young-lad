@@ -434,7 +434,7 @@ sd-vconsole hook.
 
 Additionally, we will be adding the btrfs binary to the initial ramdisk so we
 have access to it in emergency mode."
-    cp /mnt/etc/mkinitcpio.conf "$mkcp_conf"
+    cp -v /mnt/etc/mkinitcpio.conf "$mkcp_conf"
 
     source <(grep "^BINARIES" "$mkcp_conf")
     BINARIES+=("btrfs")
@@ -446,7 +446,7 @@ have access to it in emergency mode."
 additional edits if desired."
     pause
     edit_file "$mkcp_conf"
-    cp "$mkcp_conf" /mnt/etc/mkinitcpio.conf
+    cp -v "$mkcp_conf" /mnt/etc/mkinitcpio.conf
 
     msg "Now, we will edit the mkinitcpio preset file(s). Not much custom input should be
 required here. You can comment out the default_options line if you would like to
