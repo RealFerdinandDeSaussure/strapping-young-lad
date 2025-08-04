@@ -283,11 +283,33 @@ setup_firewall() {
 enroll_secrets() {
     local choice
     declare -a secrets
-    secrets=("TPM2" "PKCS#11" "FIDO2" "USB key")
+    secrets=("TPM2" "PKCS#11" "FIDO2" "USB key" "None")
     test_tpm && explain tpm
     explain secrets
-    tab_display "${secrets[@]}"
-    choice="$(select_item "${secrets[@]}")"
+    get_config_var ROOT_PARTITION
+
+    while true; do
+        msg_bold "Currently enrolled secrets:"
+        systemd-cryptenroll "${config_vars[ROOT_PARTITION]}"
+        tab_display "${secrets[@]}"
+        choice="$(select_item "${secrets[@]}")"
+
+        case "$choice" in
+            "TPM2")
+                enroll_tpm "${config_vars[ROOT_PARTITION]}"
+                ;;
+            "PKCS#11")
+                enroll_pkcs11 "${config_vars[ROOT_PARTITION]}"
+                ;;
+            "FIDO2")
+                enroll_fido2 "${config_vars[ROOT_PARTITION]}"
+                ;;
+            "USB key")
+                enroll_usb_key "${config_vars[ROOT_PARTITION]}"
+                ;;
+        esac
+    done
+
 }
 
 finalize_luks() {
