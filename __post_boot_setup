@@ -216,7 +216,7 @@ sign_bootloader_ukis() {
     msg "Adapting uki.conf..."
     set_sb_signing_in_uki_conf
 
-    explan_and_confirm signing_hooks
+    explain_and_confirm signing_hooks
     pacman -S systemd || exit 1
     bootctl install || exit 1
 }
@@ -251,7 +251,7 @@ This should never happen. Check your firmware's Secure Boot implementation."
 
     explain_and_confirm secure_boot
 
-    pacman -Sy --needed efitools sbsigntools || exit 1
+    pacman -Sy --needed efitools sbsigntools systemd-ukify || exit 1
 
     backup_sb_efivars
 
