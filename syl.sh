@@ -11,6 +11,11 @@ man_config_vars[GPT_AUTOMOUNT]="Whether the root partition should be mounted aut
 man_config_vars[ROOT_PARTITION]="Path to the partition that should hold the root file system."
 man_config_vars[EFI_PARTITION]="Path to the partition that should hold the root file system."
 
+if [ "$1" = "-q" ]; then
+    QUIET=yes
+    shift
+fi
+
 SCRIPT_DIR="$(dirname "$0")"
 STEPS=10
 STEP=$1
@@ -21,13 +26,13 @@ for i in "$SCRIPT_DIR/"__*; do
 done
 
 explain() {
+    test -n "$QUIET" && return
     local explanation_file explanation var
     explanation_file="${SCRIPT_DIR}/explain/$1"
     if [ ! -f "$explanation_file" ]; then
         msg_bold "Warning: Explanation file \"$explanation\" missing!"
         pause
     fi
-
     explanation="$(cat "$explanation_file")"
     shift
 
