@@ -21,12 +21,14 @@ for i in "$SCRIPT_DIR/"__*; do
 done
 
 explain() {
-    if [ ! -f "$1" ]; then
+    local explanation_file explanation var
+    explanation_file="${SCRIPT_DIR}/explain/$1"
+    if [ ! -f "$explanation_file" ]; then
         msg_bold "Warning: Explanation file \"$explanation\" missing!"
         pause
     fi
-    local explanation var
-    explanation="$(cat "${SCRIPT_DIR}/explain/$1")"
+
+    explanation="$(cat "$explanation_file")"
     shift
 
     var=1
