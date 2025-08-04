@@ -305,7 +305,7 @@ enroll_tpm() {
     part="$1"
     device="$(get_secret_device tpm2-device)"
     if [ -z "$device" ]; then
-        msg "No TPM2 device find. Cannot continue with this secret."
+        msg "No TPM2 device found. Cannot continue with this secret."
         return
     fi
 
@@ -330,13 +330,82 @@ enroll_tpm() {
     msg "Rebuilding UKI(s)..."
     mkinitcpio -P || exit 1
     msg "Enroll TPM2 policy"
-    systemd-cryptenroll --wipe-slot tmp2 --tpm2-device "$device" --tpm2-pcrs="" "$part"
+    systemd-cryptenroll --wipe-slot tmp2 --tpm2-device "$device" --tpm2-pcrs="" "$part" || exit 1
+}
+
+enroll_fido2() {
+    local part device
+    declare -a args
+    part="$1"
+    device="$(get_secret_device "fido2-device")"
+    if [ -z "$device" ]; then
+        msg "No FIDO2 token found. Cannot continue with this secret."
+        return
+    fi
+
+    explain fido2_addons
+    ask_y_n "Would you like to enter your PIN when using this token?" || args+=("--fido2-with-client-pin=no")
+    ask_y_n "Would you like to confirm user presence when using this token?" || args+=("--fido2-with-user-presence=no")
+    ask_y_n "Would you like to use user verification when using this token?" && args+=("--fido2-with-user-verification=yes")
+
+    msg "Enrolling FIDO2 token..."
+    systemd-cryptenroll --fido2-device="${device}" "${args[*]}" "$part" || exit 1
+}
+
+enroll_pkcs11() {
+    local part device
+    part="$1"
+    device=$(get_secret_device "pkcs11-token-uri")
+    if [ -z "$device" ]; then
+        msg "No PKCS#11 token found. Cannot continue with this secret."
+        return
+    fi
+
+    msg "Enrolling PKCS#11 token..."
+    systemd-cryptenroll --pkcs11-token-uri="$device" "$part"
+}
+
+clear_secrets() {
+    local part slot recovery
+    part="$1"
+    recovery="/root/luks-recovery-key"
+    declare -a secrets
+
+    explain clear_secrets
+
+    while read -r line; do
+        secrets+=("$line")
+    done < <(systemd-cryptenroll | awk '{if ($1 != "SLOT") print $0}')
+
+    if grep -q "password" <<< "${secrets[*]}" && [ ${#secrets[@]} -gt 1 ]; then
+        explain remove_password
+        slot="$(printf "%s\n" "${secrets[@]}" | awk '{if ($2 == "password") print $1}')"
+        ask_y_n "Would you like to wipe the password slot?" && { systemd-cryptenroll --wipe-slot="$slot" "$part" || exit 1; }
+        secrets=()
+        while read -r line; do
+            secrets+=("$line")
+        done < <(systemd-cryptenroll | awk '{if ($1 != "SLOT") print $0}')
+    fi
+
+    if ! grep -q "recovery" <<< "${secrets[*]}" && [ ${#secrets[@]} -lt 2 ]; then
+        explain recovery
+        if ask_y_n "Would you like to enroll recovery codes?"; then
+            systemd-cryptenroll --recovery-key "$part" 2>/dev/null | tee "$recovery"
+            msg "The recovery key shown above was enrolled and written to ${recovery}."
+            msg_bold "Store it safely offline outside of the encrypted partition and delete
+${recovery}!"
+        fi
+    fi
+
+    msg "This is the final list of keyslots for ${part}:"
+    systemd-cryptenroll "$part"
+    pause
 }
 
 enroll_secrets() {
     local choice
     declare -a secrets
-    secrets=("PKCS#11" "FIDO2" "USB key" "None")
+    secrets=("PKCS#11" "FIDO2" "none")
     if test_tpm; then
         explain tpm
         secrets=("TPM2" "${secrets[@]}")
@@ -361,14 +430,15 @@ enroll_secrets() {
             "FIDO2")
                 enroll_fido2 "${config_vars[ROOT_PARTITION]}"
                 ;;
-            "USB key")
-                enroll_usb_key "${config_vars[ROOT_PARTITION]}"
+            "none")
+                break
                 ;;
         esac
     done
-
+    clear_secrets "${config_vars[ROOT_PARTITION]}"
 }
 
 finalize_luks() {
     enroll_secrets
+
 }
