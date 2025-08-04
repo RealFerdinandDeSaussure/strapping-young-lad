@@ -25,6 +25,7 @@ for i in "$SCRIPT_DIR/"__*; do
     source "$i"
 done
 
+# --- functions
 explain() {
     test -n "$QUIET" && return
     local explanation_file explanation var
@@ -60,7 +61,18 @@ set_config_var_root_partition() {
     config_vars[ROOT_PARTITION]="$(get_part "${config_vars[INSTALL_DISK]}" root)"
 }
 
-# --- functions
+set_config_var_root_encrypted_name() {
+    local crypt_name
+    get_config_var ROOT_PARTITION
+
+    for map in /dev/mapper/*; do
+        cryptsetup status "$map" | grep -q "device:\s*${config_vars[ROOT_PARTITION]}" || continue
+        crypt_name="$map"
+        break
+    done
+    config_vars[ROOT_ENCRYPTED_NAME]="$(basename "$crypt_name")"
+}
+
 get_config_var() {
     local setter val env
     test -n "${config_vars["$1"]}" && return
@@ -474,6 +486,10 @@ step() {
             explain step_10
             ask_for_skip && setup_sboot
             ;;
+        11)
+            msg_bold "STEP ELEVEN: Enrolling additional secrets"
+            explain step_11
+            ask_for_skip && finalize_luks
     esac
     echo ""
 }
