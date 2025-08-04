@@ -21,13 +21,13 @@ for i in "$SCRIPT_DIR/"__*; do
 done
 
 explain() {
-    local explanation var
-    explanation="$(cat "${SCRIPT_DIR}/explain/$1")"
-    shift
-    if [ ! -f "$explanation" ]; then
+    if [ ! -f "$1" ]; then
         msg_bold "Warning: Explanation file \"$explanation\" missing!"
         pause
     fi
+    local explanation var
+    explanation="$(cat "${SCRIPT_DIR}/explain/$1")"
+    shift
 
     var=1
     for val in "$@"; do
@@ -264,8 +264,6 @@ answer 'Yes' is given in parentheses for each question."
     ask_y_n "Do you want to encrypt the DNS queries made by the system (dnscrypt-proxy)?" && pkgs+=("dnscrypt-proxy")
     ask_y_n "Will you make use of zram on the system (recommended!) (zram-generator)?" && pkgs+=("zram-generator")
     ask_y_n "Do you want to build custom (e.g. AUR) packages on the system? (base-devel)" && pkgs+=("base-devel")
-    ask_y_n "Will your system make use of TPM2 or Secure Boot features? (sytemd-ukify)" && pkgs+=("systemd-ukify")
-
     echo -n "${pkgs[*]}"
 }
 

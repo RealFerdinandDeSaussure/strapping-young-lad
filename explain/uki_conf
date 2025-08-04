@@ -1,0 +1,3 @@
+For creating our UKIs, a configuration file at /etc/kernel/uki.conf is required.
+For now, this file will only include a line to set up the splash image at boot.
+During later steps however, additional settings will be added here.

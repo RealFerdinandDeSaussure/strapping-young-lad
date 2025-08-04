@@ -2,6 +2,15 @@
 
 MS_GUID="77fa9abd-0359-4d32-bd60-28f4e78f784b"
 
+add_to_conf() {
+    local conf line header
+    conf="$1"
+    line="$2"
+    header="$3"
+    grep -q "$(printf "%s" "$line" | cut -d= -f1)" "$conf" && return
+    sed -i 's/\(\['"$header"'\]\)/\1\n'"$line"'/' "$conf"
+}
+
 get_sb_mode() {
     local mode
     mode="$(LANG=en_US.UTF-8 bootctl | grep 'Secure Boot:' | cut -d: -f2 | xargs)"
@@ -188,26 +197,16 @@ Depends = sh
 NeedsTargets' > "${hook_dir}/80-secureboot.hook"
 }
 
-create_mkinitcpio_sb_hook() {
-    local hook
-    hook=/etc/initcpio/post/uki-sbsign
-    mkdir -p "$(dirname $hook)" || exit 1
+set_sb_signing_in_uki_conf() {
+    local conf
+    conf=/etc/kernel/uki.conf
+    touch "$conf" || exit 1
 
-    # shellcheck disable=2016
-    echo '#!/usr/bin/env bash
-
-uki="$3"
-[[ -n "$uki" ]] || exit 0
-
-keypairs=(/root/sb-keys/db.key /root/sb-keys/db.crt)
-
-for (( i=0; i<${#keypairs[@]}; i+=2 )); do
-    key="${keypairs[$i]}" cert="${keypairs[(( i + 1 ))]}"
-    if ! sbverify --cert "$cert" "$uki" &>/dev/null; then
-        sbsign --key "$key" --cert "$cert" --output "$uki" "$uki"
-    fi
-done' > "$hook"
-    chmod +x "$hook"
+    grep -q "[UKI]" "$conf" || echo -e "[UKI]\n" >> "$conf"
+    add_to_conf "$conf" "SecureBootCertificate=/root/sb-keys/db.crt" UKI
+    add_to_conf "$conf" "SecureBootPrivateKey=/root/sb-keys/db.key" UKI
+    add_to_conf "$conf" "SecureBootSigningTool=systemd-sbsign" UKI
+    add_to_conf "$conf" "SignKernel=true" UKI
 }
 
 sign_bootloader_ukis() {
@@ -215,11 +214,10 @@ sign_bootloader_ukis() {
 
     msg "Creating pacman hook..."
     create_pacman_sb_hook
-    msg "Creating mkinitcpio hook..."
-    create_mkinitcpio_sb_hook
+    msg "Adapting uki.conf..."
+    set_sb_signing_in_uki_conf
 
     explan_and_confirm signing_hooks
-    pause
     pacman -S systemd || exit 1
     bootctl install || exit 1
 }
