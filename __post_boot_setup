@@ -280,11 +280,68 @@ setup_firewall() {
     ufw enable
 }
 
+get_secret_device() {
+    local cmd
+    declare -a devices
+    cmd="$1"
+    while read -r line; do
+        devices+=("$line")
+    done < <(systemd-cryptenroll --"$cmd" list 2>/dev/null | awk '{if ($1 != "PATH") print $1}')
+
+    if [ ${#devices[@]} -eq 0 ]; then
+        return
+    elif [ ${#devices[@]} -eq 1 ]; then
+        echo -n "auto"
+        return
+    else
+        tab_display "${devices[@]}"
+        echo -n "$(select_item "${devices[@]}")"
+    fi
+}
+
+enroll_tpm() {
+    local uki_conf part device priv_key pub_key header
+    uki_conf=/etc/kernel/uki.conf
+    part="$1"
+    device="$(get_secret_device tpm2-device)"
+    if [ -z "$device" ]; then
+        msg "No TPM2 device find. Cannot continue with this secret."
+        return
+    fi
+
+    explain pcr_keys
+    priv_key=/etc/systemd/tpm2-pcr-private-key.pem
+    pub_key=/etc/systemd/tpm2-pcr-public-key.pem
+    msg "Generating PCR keys..."
+    ukify genkey --pcr-private-key="$priv_key" --pcr-public-key="$pub_key" || exit 1
+
+    msg "Editing ${uki_conf}..."
+    explain_and_confirm pcr_policies
+
+    header="PCRSignature:initrd"
+    grep -q "[${header}]" "$uki_conf" || echo -e "[${header}]\n" >> "$uki_conf"
+    add_to_conf "$conf" "PCRPrivateKey=${priv_key}" "$header"
+    add_to_conf "$conf" "PCRPublicKey=${pub_key}" "$header"
+    add_to_conf "$conf" "Phases=enter-initrd" "$header"
+
+    edit_file "$uki_conf"
+
+    explain_and_confirm enroll_pcr_policy
+    msg "Rebuilding UKI(s)..."
+    mkinitcpio -P || exit 1
+    msg "Enroll TPM2 policy"
+    systemd-cryptenroll --wipe-slot tmp2 --tpm2-device "$device" --tpm2-pcrs="" "$part"
+}
+
 enroll_secrets() {
     local choice
     declare -a secrets
-    secrets=("TPM2" "PKCS#11" "FIDO2" "USB key" "None")
-    test_tpm && explain tpm
+    secrets=("PKCS#11" "FIDO2" "USB key" "None")
+    if test_tpm; then
+        explain tpm
+        secrets=("TPM2" "${secrets[@]}")
+    fi
+
     explain secrets
     get_config_var ROOT_PARTITION
 
