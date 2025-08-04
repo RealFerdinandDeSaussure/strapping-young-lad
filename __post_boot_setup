@@ -37,16 +37,12 @@ get_sb_mode() {
 
 backup_sb_efivars() {
     local bckp_folder
-    declare -a bckps
-    bckp_folder="$HOME/sb-keys.backup"
-    bckps=("$bckp_folder"/*)
+    bckp_folder="$(get_safe_filename "$HOME/sb-keys.backup")"
+    mkdir -p "$bckp_folder"
 
-    test ${#bckps[@]} -eq 4 && return
-
-    msg backup_efivars "${bckp_folder}"
+    explain backup_efivars "${bckp_folder}"
 
     msg "Backing up Secure Boot efivars..."
-    mkdir -p "$bckp_folder"
     for v in PK KEK db dbx; do
         efi-readvar -v $v -o "$bckp_folder/${v}.esl" || exit 1
     done
@@ -368,7 +364,7 @@ enroll_pkcs11() {
 clear_secrets() {
     local part slot recovery
     part="$1"
-    recovery="/root/luks-recovery-key"
+    recovery="$(get_safe_filename "$HOME/luks-recovery-key")"
     declare -a secrets
 
     explain clear_secrets
@@ -403,7 +399,8 @@ ${recovery}!"
 }
 
 enroll_secrets() {
-    local choice
+    local part choice
+    part="$1"
     declare -a secrets
     secrets=("PKCS#11" "FIDO2" "none")
     if test_tpm; then
@@ -412,33 +409,43 @@ enroll_secrets() {
     fi
 
     explain secrets
-    get_config_var ROOT_PARTITION
 
     while true; do
         msg_bold "Currently enrolled secrets:"
-        systemd-cryptenroll "${config_vars[ROOT_PARTITION]}"
+        systemd-cryptenroll "$part"
         tab_display "${secrets[@]}"
         choice="$(select_item "${secrets[@]}")"
 
         case "$choice" in
             "TPM2")
-                enroll_tpm "${config_vars[ROOT_PARTITION]}"
+                enroll_tpm "$part"
                 ;;
             "PKCS#11")
-                enroll_pkcs11 "${config_vars[ROOT_PARTITION]}"
+                enroll_pkcs11 "$part"
                 ;;
             "FIDO2")
-                enroll_fido2 "${config_vars[ROOT_PARTITION]}"
+                enroll_fido2 "$part"
                 ;;
             "none")
                 break
                 ;;
         esac
     done
-    clear_secrets "${config_vars[ROOT_PARTITION]}"
+    clear_secrets "$part"
 }
 
 finalize_luks() {
-    enroll_secrets
+    local header_bckp
+    header_bckp="$(get_safe_filename "$HOME/LUKS_header.bckp")"
+    get_config_var ROOT_PARTITION
 
+    enroll_secrets "${config_vars[ROOT_PARTITION]}"
+
+    explain luksheader_backup
+    if ask_y_n "Would you like to create a backup of the LUKS header?"; then
+        cryptsetup luksHeaderBackup "${config_vars[ROOT_PARTITION]}" --header-backup-file "$header_bckp" || exit 1
+        msg "Header backup saved at ${header_bckp}."
+        msg_bold "Copy it to a safe, offline location outside of the encrypted partition and shred
+${header_bckp}!"
+    fi
 }

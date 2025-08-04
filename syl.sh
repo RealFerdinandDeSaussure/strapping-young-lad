@@ -17,7 +17,7 @@ if [ "$1" = "-q" ]; then
 fi
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-STEPS=10
+STEPS=11
 STEP=$1
 
 # shellcheck source=./*
@@ -94,6 +94,14 @@ This is the documentation for this setting:
 Please provide a value for this setting below. Be aware that provided values will not be validated."
     read -rp "  $1> " val
     config_vars["$1"]="$val"
+}
+
+get_safe_filename() {
+    filename="$1"
+    while [ -f "$filename" ]; do
+        filename+="_"
+    done
+    echo -n "$filename"
 }
 
 msg_bold() {
