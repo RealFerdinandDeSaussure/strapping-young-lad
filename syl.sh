@@ -330,6 +330,7 @@ tab_display() {
         (( (++count % 4) == 0)) && output+=("")
     done
     # (( count % 4 > 0 )) && output+=("")
+    test -z "${output[-1]}" && output=("${output[@]:0:((${#output[@]} - 1))}")
 
     if [ ${#output[@]} -gt $(($(tput lines) - 1)) ]; then
         printf "%s\n" "${output[@]}" | less
