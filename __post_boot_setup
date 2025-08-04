@@ -5,8 +5,8 @@ MS_GUID="77fa9abd-0359-4d32-bd60-28f4e78f784b"
 add_to_conf() {
     local conf line header
     conf="$1"
-    line="$2"
-    header="$3"
+    line="${2//\//\\/}"
+    header="${3//\//\\/}"
     grep -q "$(printf "%s" "$line" | cut -d= -f1)" "$conf" && return
     sed -i 's/\(\['"$header"'\]\)/\1\n'"$line"'/' "$conf"
 }
@@ -163,8 +163,7 @@ enroll_keys() {
         cp -v "${keys[@]}" "${sbsign_dir}/${i}" || exit 1
     done
 
-    msg enroll_keys "${sbsign_dir}"
-    pause
+    explain_and_confirm enroll_keys "${sbsign_dir}"
 
     for k in /sys/firmware/efi/efivars/{PK,KEK,db}*; do
         chattr -i "$k"
@@ -244,6 +243,7 @@ This should never happen. Check your firmware's Secure Boot implementation."
             ;;
         *)
             msg "Secure Boot needs to be in \"Setup Mode\" before we can continue."
+            explain setup_mode
             ask_y_n_secure "Do you wish to reboot into firmware now?" && systemctl reboot --firmware-setup
             exit
             ;;

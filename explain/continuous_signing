@@ -6,6 +6,6 @@ happen, we will create a pacman hook to trigger signing of updated bootloader
 executables and edit uki.conf to include signing of UKI files part of their
 build process.
 
-To make sure that both the pacman and mkinitcpio hook are working, we will not
-sign anything manually but create the necessary files and simulate an update to
-the systemd package.
+To make sure that both the pacman hook and the UKI config are working, we will
+not sign anything manually but create the necessary files and simulate an update
+to the systemd package.
