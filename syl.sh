@@ -43,7 +43,7 @@ explain() {
         ((++var))
     done
     echo "
-$explanation"
+${explanation//%[[:digit:]]}/"
 }
 
 explain_and_confirm() {
