@@ -16,7 +16,7 @@ if [ "$1" = "-q" ]; then
     shift
 fi
 
-SCRIPT_DIR="$(dirname "$0")"
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 STEPS=10
 STEP=$1
 
