@@ -279,3 +279,17 @@ setup_firewall() {
     msg "Enabling ufw..."
     ufw enable
 }
+
+enroll_secrets() {
+    local choice
+    declare -a secrets
+    secrets=("TPM2" "PKCS#11" "FIDO2" "USB key")
+    test_tpm && explain tpm
+    explain secrets
+    tab_display "${secrets[@]}"
+    choice="$(select_item "${secrets[@]}")"
+}
+
+finalize_luks() {
+    enroll_secrets
+}
