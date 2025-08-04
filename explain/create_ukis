@@ -1,7 +1,7 @@
 First, we will create one or more unified kernel image(s) (UKI). This requires
 adapting the configuration and preset files for mkinitcpio and customizing the
 kernel command line. This script should take care of most of the work but each
-config file will be opened with a text editor (\$EDITOR) so you can make custom
+config file will be opened with a text editor ($EDITOR) so you can make custom
 adjustments.
 One thing to note is that we will be using a systemd based initramfs. ArchLinux
 by default uses busybox but using systemd gives us access to a couple of handy
