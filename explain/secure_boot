@@ -5,5 +5,5 @@ We are setting up Secure Boot before enrolling additional secrets for LUKS,
 because using the TPM2 as a secret in many cases requires binding to the Secure
 Boot state (don't worry if you do not know what any of that means).
 
-Before, we start let's install a couple of packages that we will need in the
+Before we start, let's install a couple of packages that we will need in the
 process.

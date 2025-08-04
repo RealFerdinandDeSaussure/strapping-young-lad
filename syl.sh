@@ -31,7 +31,7 @@ explain() {
     local explanation_file explanation var
     explanation_file="${SCRIPT_DIR}/explain/$1"
     if [ ! -f "$explanation_file" ]; then
-        msg_bold "Warning: Explanation file \"$explanation\" missing!"
+        msg_bold "Warning: Explanation file \"$explanation_file\" missing!"
         pause
     fi
     explanation="$(cat "$explanation_file")"
