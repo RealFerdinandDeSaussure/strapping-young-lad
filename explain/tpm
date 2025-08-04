@@ -1,0 +1,16 @@
+Using the TPM to enroll a secret into the LUKS partition is highly recommended.
+The TPM can be used to only make the encryption keys available if Secure Boot
+has not been tampered with and the booted UKI is in an expected state. This
+setup is similar to how Windows protects the system by default.
+
+The TPM can also be used to secure a password, providing stronger protection
+than a regular software-based approach, although the particulars of this depend
+on the firmware implementation. In general, TPM-enclosed passwords can have much
+lower entropy as the TPM will lock after too many failed attempts and thus
+prevent brute-force attempts.
+
+This script will only enroll TPM-based secrets along with a PIN. A TPM that
+unlocks a root partition without any further protective measures offers only the
+most basic protection in the event of a stolen system. However, combined with a
+low to medium entropy PIN, enrolling the TPM state offers strong protection
+against boot chain tampering as well as unauthorized physical access.

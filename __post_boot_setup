@@ -404,7 +404,7 @@ enroll_secrets() {
     declare -a secrets
     secrets=("PKCS#11" "FIDO2" "none")
     if test_tpm; then
-        explain tpm
+        explain_and_confirm tpm
         secrets=("TPM2" "${secrets[@]}")
     fi
 
