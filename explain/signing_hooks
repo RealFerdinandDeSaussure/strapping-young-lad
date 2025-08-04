@@ -1,0 +1,7 @@
+To trigger both hooks, we will run "pacman -S systemd" and "bootctl
+install".
+Installing systemd will run the pacman hook, which will trigger signing of the
+bootloader binaries. A default pacman hook will also be run, which will trigger
+rebuilding the UKIs. After that is done, our mkinitcpio hook will run and sign
+the UKI. "bootctl install" will copy the updated (signed) bootloader EFI binary
+to the EFI system partition.

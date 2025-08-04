@@ -1,0 +1,4 @@
+Okay, as promised, we will also enroll Microsoft's keys. For this purpose, we
+will now create a database update file which we can later apply to our own
+database. This requires downloading a couple of certificates from their
+website.

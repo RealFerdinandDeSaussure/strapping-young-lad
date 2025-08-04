@@ -20,6 +20,29 @@ for i in "$SCRIPT_DIR/"__*; do
     source "$i"
 done
 
+explain() {
+    local explanation var
+    explanation="$(cat "${SCRIPT_DIR}/explain/$1")"
+    shift
+    if [ ! -f "$explanation" ]; then
+        msg_bold "Warning: Explanation file \"$explanation\" missing!"
+        pause
+    fi
+
+    var=1
+    for val in "$@"; do
+        explanation="${explanation//"%$var"/"$val"}"
+        ((++var))
+    done
+    echo "
+$explanation"
+}
+
+explain_and_confirm() {
+    explain "$@"
+    pause
+}
+
 set_config_var_efi_partition() {
     get_config_var INSTALL_DISK
     config_vars[EFI_PARTITION]="$(get_part "${config_vars[INSTALL_DISK]}" EFI)"
@@ -241,6 +264,7 @@ answer 'Yes' is given in parentheses for each question."
     ask_y_n "Do you want to encrypt the DNS queries made by the system (dnscrypt-proxy)?" && pkgs+=("dnscrypt-proxy")
     ask_y_n "Will you make use of zram on the system (recommended!) (zram-generator)?" && pkgs+=("zram-generator")
     ask_y_n "Do you want to build custom (e.g. AUR) packages on the system? (base-devel)" && pkgs+=("base-devel")
+    ask_y_n "Will your system make use of TPM2 or Secure Boot features? (sytemd-ukify)" && pkgs+=("systemd-ukify")
 
     echo -n "${pkgs[*]}"
 }
@@ -270,14 +294,7 @@ bootstrap() {
 
     pkgs+="$(prompt_for_extra_pkgs)"
 
-    msg "If desired, you can specify additional packages you would like to install on the
-system. Some common choices would be:
-    - man-db
-    - man-pages
-    - less
-    - sudo
-    - vim
-"
+    explain common_packages
     while true; do
         read -rp "  Please enter additional packages separated by spaces here (default: none): " choice
         no_pkgs="$(get_missing_pkgs "$choice")"
@@ -380,8 +397,8 @@ test_system_mounted() {
 prepare_for_reboot() {
     local swap
     test_system_mounted || exit 1
-    msg "First, we will need git on the live medium. It is probably already installed but
-let's make sure."
+    msg "For this, we will need git on the live medium. It is probably already installed
+but let's make sure."
     pacman -Sy --needed git
 
     msg "Cloning to new system..."
@@ -391,15 +408,8 @@ let's make sure."
     swapoff -a
     umount -R /mnt
 
-    msg "This concludes the installation process from the live medium. Next, you should
-shut down the computer, remove the installation medium and turn the system back
-on. After entering your encryption password, you should be taken to the tty
-login screen where you can login as root.
-Once logged in as root, run strapping-young-lad/syl.sh 9 to continue the setup.
-
-If you wish to set up Secure Boot later on, you can also enter Secure Boot setup
-mode before booting into the system. However, you may also do this at a later
-stage of the installation process."
+    msg "This concludes the installation process from the live medium."
+    explain boot_into_system
     exit
 }
 
@@ -409,133 +419,53 @@ step() {
     case "$1" in
         1)
             msg_bold "STEP ONE: Setting up the partition table"
-            msg "Specify a disk with unpartitioned disk space. It will be formatted and the
-following partitions will be created on it:
-    - an EFI system partition of size 1G if one does not exist already
-    - an unformatted root partition
-
-General note: If you abort the installation process at any point, you may
-restart at a specific step by passing its number as an argument to the script."
+            explain step_1
             # TODO: alternative partition layout
             ask_for_skip && setup_parts
             ;;
         2)
             msg_bold "STEP TWO: Encrypting and formatting the partitions"
-            msg "Next, we will encrypt the root partition using LUKS2 encryption. You will be
-asked for a password. If you intend to use this password as a decryption key on
-the final system, you should choose a secure one.
-During a later step, you will have the opportunity to enroll other keys as well.
-You may then also delete the password you set during this step.
-
-After encryption, the root partition will be unlocked so it can be used in the next steps."
+            explain step_2
             ask_for_skip && encrypt_parts
             ;;
         3)
             msg_bold "STEP THREE: Creating btrfs subvolumes"
-            msg "Instead of a conventional partitioning scheme, we will use subvolumes on a
-single btrfs partition to simulate a multi-partition structure. This has the
-advantage of only encrypting a single partition while still enjoying the
-benefits of a multi partition layout.
-Additionally, you will be able to make use of btrfs's snapshot feature to backup
-subvolumes.
-
-First, we will create a btrfs filesystem on root.
-Afterwards, the following subvolumes will be created:
-    - @: the root file system, to be mounted at /
-    - @home: the home \"partition\", to be mounted at /home
-    - @snp: a subvolume to hold snapshots of other subvolumes, to be mounted at /snp
-
-On @, we will create additional subvolumes. This is just so btrfs snapshots will
-not include these paths:
-    - /swap: subvolume to hold a swapfile
-    - /var/var: this and the following subvolumes are for folders considered not relevant for backups
-    - /var/cache
-    - /var/log"
+            explain step_3
             ask_for_skip && setup_root
             ;;
         4)
             msg_bold "STEP FOUR: Mounting partitions and subvolumes"
-            msg "Let's mount our partitions and subvolumes at the following mountpoints:
-    - @ subvolume: /mnt
-    - @home subvolume: /mnt/home
-    - @snp subvolume: /mnt/snp (not necessary but helpful for the genfstab script)
-    - EFI system partition: /mnt/boot
-
-Should any of the mountpoints not exist, they will be created."
+            explain step_4
             ask_for_skip && mount_system
             ;;
         5)
             msg_bold "STEP FIVE: Bootstrapping the system"
-            msg "Now, we will bootstrap the system by copying a base ArchLinux install to the
-prepared system. Normally, this base system will consist of three packages:
-base, linux and linux-firmware.
-We will also install a few extra packages that may be useful later. If you wish,
-you can switch out 'linux' with a different kernel package. You may also specify
-additional packages if desired."
+            explain step_5
             ask_for_skip && bootstrap
             ;;
         6)
             msg_bold "STEP SIX: Setting up the system"
-            msg "Now, we will make some changes to the bootstrapped system that ensure basic
-functionality.
-During this process, the following options can be customized:
-    - swap size and zram settings
-    - the fstab file
-    - system clock and time settings
-    - locale
-    - supported network interfaces
-    - root password
-
-This includes quite a few steps and you will be offered to skip any of them in
-case you have already completed them manually. If you have not, skipping a step
-may result in an incomplete system."
+            explain step_6
             ask_for_skip && prepare_system
             ;;
         7)
             msg_bold "STEP SEVEN: Making the system bootable"
-            msg "Yes, what it says in the headline. We will first create a unified kernel image
-(UKI) and then install the bootloader. This is the most critical step of the
-installation process as errors made here can result in an unbootable system."
+            explain step_7
             ask_for_skip && make_bootable
             ;;
         8)
             msg_bold "STEP EIGHT: Copying the script to the new system"
-            msg "At this point, the system should be bootable. Before we will boot into it, we
-will clone this script's git repository to the new system's root folder so we
-can continue with the setup process after booting into the new system."
+            explain step_8
             ask_for_skip && prepare_for_reboot
             ;;
         9)
             msg_bold "STEP NINE: Setting up a basic firewall"
-            msg "Now that we are on the new system (if we are not, you should quit and reboot
-into the system), we can make additional steps toward a more fully fleshed out
-setup.
-
-The first few steps deal with security. We will install ufw, a simple firewall,
-and set up a very basic ruleset for it. Afterwards, we can get onto the much
-more daunting (and optional) task of installing Secure Boot."
+            explain step_9
             ask_for_skip && setup_firewall
             ;;
         10)
             msg_bold "STEP TEN: Setting up Secure Boot"
-            msg "Secure Boot provides a way to prevent unnoticed tampering with the bootchain.
-Using Secure Boot requires signing different parts of the bootchain and
-verifying their signature before execution.
-
-Device firmware can also be factory-signed and make use of Secure Boot for
-verification. Microsoft's certificates are used for signing in this case will be
-the ones provided by Microsoft. For this reason, we will also enroll Microsoft's
-keys. This is non-optional as not doing so can run the risk of bricking your
-entire system.
-
-All the commands in this step are well documented and are considered safe. I use
-this script myself to set up Secure Boot on my system and have never run into
-any issues. Nevertheless, you yourself are responsible for reading through the
-script and taking proper care when executing this step. I TAKE NO RESPONSIBILITY
-FOR ANY DAMAGE YOUR SYSTEM MAY SUSTAIN.
-
-Secure Boot is a useful security feature but if this is all a bit much for you,
-feel free to skip this step."
+            explain step_10
             ask_for_skip && setup_sboot
             ;;
     esac

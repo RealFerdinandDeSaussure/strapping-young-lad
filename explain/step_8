@@ -1,0 +1,3 @@
+At this point, the system should be bootable. Before we will boot into it, we
+will clone this script's git repository to the new system's root folder so we
+can continue with the setup process after booting into the new system.

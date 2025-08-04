@@ -1,0 +1,7 @@
+Next, we will encrypt the root partition using LUKS2 encryption. You will be
+asked for a password. If you intend to use this password as a decryption key on
+the final system, you should choose a secure one.
+During a later step, you will have the opportunity to enroll other keys as well.
+You may then also delete the password you set during this step.
+
+After encryption, the root partition will be unlocked so it can be used in the next steps.

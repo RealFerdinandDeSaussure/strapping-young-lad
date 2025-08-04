@@ -1,0 +1,6 @@
+Now, we will bootstrap the system by copying a base ArchLinux install to the
+prepared system. Normally, this base system will consist of three packages:
+base, linux and linux-firmware.
+We will also install a few extra packages that may be useful later. If you wish,
+you can switch out 'linux' with a different kernel package. You may also specify
+additional packages if desired.

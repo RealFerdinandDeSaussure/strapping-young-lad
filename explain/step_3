@@ -1,0 +1,19 @@
+Instead of a conventional partitioning scheme, we will use subvolumes on a
+single btrfs partition to simulate a multi-partition structure. This has the
+advantage of only encrypting a single partition while still enjoying the
+benefits of a multi partition layout.
+Additionally, you will be able to make use of btrfs's snapshot feature to backup
+subvolumes.
+
+First, we will create a btrfs filesystem on root.
+Afterwards, the following subvolumes will be created:
+    - @: the root file system, to be mounted at /
+    - @home: the home \"partition\", to be mounted at /home
+    - @snp: a subvolume to hold snapshots of other subvolumes, to be mounted at /snp
+
+On @, we will create additional subvolumes. This is just so btrfs snapshots will
+not include these paths:
+    - /swap: subvolume to hold a swapfile
+    - /var/var: this and the following subvolumes are for folders considered not relevant for backups
+    - /var/cache
+    - /var/log

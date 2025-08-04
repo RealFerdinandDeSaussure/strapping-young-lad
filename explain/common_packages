@@ -1,0 +1,7 @@
+If desired, you can specify additional packages you would like to install on the
+system. Some common choices would be:
+    - man-db
+    - man-pages
+    - less
+    - sudo
+    - vim

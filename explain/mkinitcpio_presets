@@ -1,0 +1,9 @@
+Now, we will edit the mkinitcpio preset file(s). Not much custom input should be
+required here. You can comment out the default_options line if you would like to
+suppress the splash boot image.
+
+Be aware that you do not have to save generated UKIs at the path defined in the
+preset config but it is recommended to do so. The bootloader (systemd-boot) will
+only create entries automatically for images located at EFI/Linux on your EFI
+system partition. If you put them in a different location, you will have to
+create the corresponding entries manually.

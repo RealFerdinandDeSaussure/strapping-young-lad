@@ -1,0 +1,10 @@
+Neither the bootloader nor the UKIs will remain unchanged with time. Updates to
+either systemd-boot or the kernel will trigger either a new EFI binary being
+copied to the EFI system partition or a rebuild of the associated UKI. Every
+time this happens, the respective files need to be resigned. To make this
+happen, we are using a mkinitcpio hook (for the UKI) and a pacman hook (for
+systemd-boot).
+
+To make sure that both the pacman and mkinitcpio hook are working, we will not
+sign anything manually but create the hooks and run them to trigger the signing
+process.

@@ -1,0 +1,5 @@
+There are a couple of improvements over the basic systemd provided network files
+that can be set up in addition. These include:
+    - Multicast/MulticastDNS support
+    - making systemd wait for a routable IP address
+    - creating a smoother transition from wifi to ethernet connections (if both are available)

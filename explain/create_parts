@@ -1,0 +1,13 @@
+Partitions created by this script will always use the largest continuous block
+of empty space available.
+If the partition table is heavily fragmented, you should repartition it
+manually.
+
+When providing partition sizes, you can either give values ending in G(igabyte),
+M(egabyte) or %(=percentage of total disk space.)
+Without any of these qualifiers at the end, values will be considered sectors of
+512-byte size.
+The value 0 means the largest continuously empty block on the disk (most of the
+time, this is equivalent to the remaining empty space).
+
+Now let's get started.

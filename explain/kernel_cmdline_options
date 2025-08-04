@@ -1,0 +1,7 @@
+Before looking at the generated file, here's an overview of the kernel
+options included:%1
+    - rootflags: options for mounting the root partitions - for our setup, this
+                 is important as this is where we specify the root subvolume
+    - rw: read/write access (this is required for the root partition)
+    - quiet: suppress output when booting
+    - bgrt_disable: suppress display of the OEM logo

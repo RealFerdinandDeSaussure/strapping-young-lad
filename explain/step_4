@@ -1,0 +1,7 @@
+Let's mount our partitions and subvolumes at the following mountpoints:
+    - @ subvolume: /mnt
+    - @home subvolume: /mnt/home
+    - @snp subvolume: /mnt/snp (not necessary but helpful for the genfstab script)
+    - EFI system partition: /mnt/boot
+
+Should any of the mountpoints not exist, they will be created.

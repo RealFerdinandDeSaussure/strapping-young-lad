@@ -1,0 +1,7 @@
+Specify a disk with unpartitioned disk space. It will be formatted and the
+following partitions will be created on it:
+    - an EFI system partition of size 1G if one does not exist already
+    - an unformatted root partition
+
+General note: If you abort the installation process at any point, you may
+restart at a specific step by passing its number as an argument to the script.

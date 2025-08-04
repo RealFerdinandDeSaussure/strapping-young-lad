@@ -142,12 +142,8 @@ RouteMetric=100 " >> "$c"
         done
     fi
 
-    msg "There are a couple of improvements over the basic systemd provided network files
-that can be set up in addition. These include:
-    - Multicast/MulticastDNS support
-    - making systemd wait for a routable IP address
-    - creating a smoother transition from wifi to ethernet connections (if both are available)"
-    if ask_y_n "Would you like to add these to the existing network configurations?"; then
+    explain drop_in
+    if ask_y_n "Would you like to extend the configuration presets?"; then
         msg "Creating custom drop-in file(s)..."
         test -n "$eth_serv" && create_net_dropin "$eth_serv" "$eth_custom"
         test -n "$wifi_serv" && create_net_dropin "$wifi_serv" "$wifi_custom"
@@ -223,11 +219,7 @@ create_zram() {
     echo "[zram0]
 zram-size = min(ram / 2, 4096)
 compression-algorithm = zstd" > "$zram_conf"
-    msg "A configuration file for one zram device has been written to
-zram-generator.conf. Have a look at the config file. In most cases, no further
-customization should be necessary; zram-size is set to its default value and
-zstd will be used for compression."
-    pause
+    explain_and_confirm zram-generator.conf
     edit_file "$zram_conf"
 
     # in case the user has added additional zram devices
@@ -280,17 +272,11 @@ create_swap_zram() {
 prepare_system() {
     test_system_mounted || exit 1
 
-    msg "First, let's setup swap and zram. On modern systems with RAM sizes of 16GB and
-more, the system can run without any issues using only zram and no swap space at
-all. Swap can still be used as a safety net or if you have a specific RAM-heavy
-use case in mind. Furthermore, if you want to use hibernation on your system,
-swap space at least the size of the available RAM must be set up.
-
-If you decide to use swap, a swap file will be used. Unlike a swap partition, a
-swap file's size can be adapted much easier later if desired."
+    echo "First, let's setup swap and zram."
+    explain swap_zram
     ask_y_n "Would you like to continue?" continue skip && create_swap_zram
 
-    msg "With all partitions mounted and a swap file created, we can generate the file
+    echo "With all partitions mounted and a swap file created, we can generate the file
 system table."
     if ask_y_n "Would you like to continue?" continue skip; then
         genfstab -U /mnt >> /mnt/etc/fstab || exit 1
@@ -374,23 +360,10 @@ generate_kcmdline() {
     get_config_var ROOT_ENCRYPTED_NAME
     cryptroot="${config_vars[ROOT_ENCRYPTED_NAME]}"
 
-    msg "Next, we will generate the kernel command line, which will be integrated into
-the UKI."
+    explain kernel_cmdline
 
     if [ "$(get_part_parent "$efi")" = "$(get_part_parent "$root")" ]; then
-        msg "systemd supports automounting the root partition (other partitions as well but
-for those we are using subvolumes), which makes things easier to maintain in the
-long run.
-The encrypted partition will be provided as /dev/gpt-auto-root-luks, the
-unlocked root partition as /dev/gpt-auto-root.
-These are the requirements for automounting support:
-    - using a systemd initramfs
-    - the root and EFI system partitions must be on the same device
-    - the correct GPT partition types must be set
-    - the bootloader must support it
-
-By following this script, all the criteria should have been met. Nevertheless,
-you can still choose to specify the root partition explicitly."
+        explain gpt_automounting
         if ask_y_n "Would you like to use GPT automounting?"; then
             gpt_automount=1
         else
@@ -398,16 +371,14 @@ you can still choose to specify the root partition explicitly."
         fi
         config_vars[GPT_AUTOMOUNT]=$gpt_automount
     fi
-   
-    msg "Before looking at the generated file, here's an overview of the kernel
-options included:"
-    test $gpt_automount = 0 && msg "    - root: the root partition (i.e. the mapping of the unlocked cryptdevice)"
-    echo "    - rootflags: options for mounting the root partitions - for our setup, this
-                 is important as this is where we specify the root subvolume
-    - rw: read/write access (this is required for the root partition)
-    - quiet: suppress output when booting
-    - bgrt_disable: suppress display of the OEM logo"
-    pause
+    
+    if [ "$gpt_automount" = 0 ]; then
+        explain_and_confirm kernel_cmdline_options "
+    - root: the root partition (i.e. the mapping of the unlocked cryptdevice)"
+    else
+        explain_and_confirm kernel_cmdline_options
+    fi
+
     cmdline="rootflags=subvol=@ rw quiet bgrt_disable"
     test $gpt_automount = 0 && cmdline="root=/dev/mapper/$cryptroot $cmdline"
     echo "$cmdline" > /mnt/etc/kernel/cmdline
@@ -421,19 +392,18 @@ create_crypttab_initramfs() {
     get_config_var ROOT_PARTITION
     root="${config_vars[ROOT_PARTITION]}"
 
-    msg "The last step for creating a UKI is setting up crypttab.initramfs. This is a
-crypttab file that will be added to the image and will be used at boot time to
-unlock any encrypted devices listed in it."
 
     if [ "$gpt_automount" = 1 ]; then
-        msg "As you have set up automounting, you can entirely ignore this file. However, if
+        explain crypttab.initramfs "
+
+As you have set up automounting, you can entirely ignore this file. However, if
 you have set up additional unlock methods for your encrypted partitions,
 crypttab.initramfs is a good place to specify them (the other place would be the
 kernel commandline). We will come back to enrolling other keys and adding them
 to crypttab.initramfs once we have booted into the new system."
-        ask_y_n "Nevertheless, would you like to edit crypttab.initramfs now?" || return
+    ask_y_n "Would you like to edit crypttab.initramfs now?" || return
     else
-        pause
+        explain_and_confirm crypttab.initramfs
     fi
 
     if [ "$gpt_automount" = 1 ]; then
@@ -451,14 +421,7 @@ setup_mkinitcpio() {
     local BINARIES mkcp_conf hooks uki_folder
     mkcp_conf="$(mktemp)"
     
-    msg "Let's get started! First, we will add additional hooks to the mkinitcpio config.
-These are required for unlocking the root partition at boot time. If you are
-using a non-US console keymap or a non-default console font (you aren't if you
-have only been following this script so far), we also need to add the
-sd-vconsole hook.
-
-Additionally, we will be adding the btrfs binary to the initial ramdisk so we
-have access to it in emergency mode."
+    explain mkinitcpio.conf
     cp /mnt/etc/mkinitcpio.conf "$mkcp_conf"
 
     source <(grep "^BINARIES" "$mkcp_conf")
@@ -473,15 +436,7 @@ additional edits if desired."
     edit_file "$mkcp_conf"
     cp "$mkcp_conf" /mnt/etc/mkinitcpio.conf
 
-    msg "Now, we will edit the mkinitcpio preset file(s). Not much custom input should be
-required here. You can comment out the default_options line if you would like to
-suppress the splash boot image.
-
-Be aware that you do not have to save generated UKIs at the path defined in the
-preset config but it is recommended to do so. The bootloader (systemd-boot) will
-only create entries automatically for images located at EFI/Linux on your EFI
-system partition. If you put them in a different location, you will have to
-create the corresponding entries manually."
+    explain mkinitcpio_presets
 
     for p in /mnt/etc/mkinitcpio.d/*.preset; do
         msg "Editing $p..."
@@ -543,37 +498,14 @@ timeout menu-hidden
 editor false
 console-mode max" > "$loader_conf"
 
-    msg "The bootloader was installed succesfully. systemd-boot will automatically
-generate entries for Windows, macOS (I hope that's the right name) and all .efi
-files in /boot/EFI/Linux. You can customize the bootloader config further, if
-you would like. Here's an overview of the settings included right now:
-    - default: the default entry to boot; set to a value determined by the
-               script or to nothing if it was unsuccesful in finding an entry
-    - timeout: how long to show the boot menu; set to menu-hidden, which will
-               not display the menu unless the spacebar is held down at boot
-    - editor: whether or not to allow editing the kernel commandline; disabled
-              for security
-    - console-mode: resolution of the boot menu; set to max, the highest
-                    possible resolution
-
-If you put UKIs in a folder other than /boot/EFI/Linux, or have other EFI
-applications you would like to include in the boot menu, remember to create
-entries for them manually."
-    pause
+    explain_and_confirm bootloader_conf
     edit_file "$loader_conf"
 }
 
 make_bootable() {
     test_system_mounted || exit 1
 
-    msg "First, we will create one or more unified kernel image(s) (UKI). This requires
-adapting the configuration and preset files for mkinitcpio and customizing the
-kernel command line. This script should take care of most of the work but each
-config file will be opened with a text editor (\$EDITOR) so you can make custom
-adjustments.
-One thing to note is that we will be using a systemd based initramfs. ArchLinux
-by default uses busybox but using systemd gives us access to a couple of handy
-extensions during the boot process."
+    explain create_ukis
 
     setup_mkinitcpio
 

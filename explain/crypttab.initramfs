@@ -1,0 +1,3 @@
+The last step for creating a UKI is setting up crypttab.initramfs. This is a
+crypttab file that will be added to the image and will be used at boot time to
+unlock any encrypted devices listed in it.%1

@@ -1,0 +1,3 @@
+Yes, what it says in the headline. We will first create a unified kernel image
+(UKI) and then install the bootloader. This is the most critical step of the
+installation process as errors made here can result in an unbootable system.
