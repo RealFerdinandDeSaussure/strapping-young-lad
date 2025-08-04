@@ -417,15 +417,6 @@ to crypttab.initramfs once we have booted into the new system."
     # option for crypttab.initramfs (fido2)
 }
 
-setup_uki_conf() {
-    local uki_conf
-    uki_conf=/mnt/etc/kernel/uki.conf
-    explain_and_confirm uki_conf
-    echo "[UKI]
-Splash=/usr/share/systemd/bootctl/splash-arch.bmp" > "$uki_conf"
-    edit_file "$uki_conf"
-}
-
 setup_mkinitcpio() {
     local BINARIES mkcp_conf hooks uki_folder
     mkcp_conf="$(mktemp)"
@@ -434,8 +425,10 @@ setup_mkinitcpio() {
     cp /mnt/etc/mkinitcpio.conf "$mkcp_conf"
 
     source <(grep "^BINARIES" "$mkcp_conf")
-    BINARIES+=("btrfs")
-    sed -i 's/^BINARIES=.*/BINARIES=('"${BINARIES[*]}"')/' "$mkcp_conf" || exit 1
+    if [[ ! "${BINARIES[*]}" =~ "btrfs" ]]; then
+        BINARIES+=("btrfs")
+        sed -i 's/^BINARIES=.*/BINARIES=('"${BINARIES[*]}"')/' "$mkcp_conf" || exit 1
+    fi
 
     adapt_hooks "$mkcp_conf"
 
@@ -445,7 +438,17 @@ additional edits if desired."
     edit_file "$mkcp_conf"
     cp "$mkcp_conf" /mnt/etc/mkinitcpio.conf
 
-    setup_uki_conf
+    explain mkinitcpio_presets
+
+    for p in /mnt/etc/mkinitcpio.d/*.preset; do
+        msg "Editing $p..."
+        pause
+        for i in default_uki fallback_uki default_options; do
+            sed -ri 's/^#('"${i}"'=)/\1/' "$p" || exit 1
+            sed -ri 's/("\/)efi/\1boot/' "$p" || exit 1
+        done
+        edit_file "$p"
+    done
 
     generate_kcmdline
 
