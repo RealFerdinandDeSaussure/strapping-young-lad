@@ -1,2 +1,1 @@
-Before we start, we will backup the current Secure Boot EFI variables to
-%1.
+Before we start, we will backup the current Secure Boot EFI variables at %1.

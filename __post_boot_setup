@@ -37,7 +37,7 @@ get_sb_mode() {
 
 backup_sb_efivars() {
     local bckp_folder
-    bckp_folder="$(get_safe_filename "$HOME/sb-keys.backup")"
+    bckp_folder="$(get_safe_filename "$HOME/sb-keys.backup-$(date +%s)")"
     mkdir -p "$bckp_folder"
 
     explain backup_efivars "${bckp_folder}"
@@ -223,6 +223,8 @@ setup_sboot() {
     ms_tmp_dir="$(mktemp -d)"
     sb_mode="$(get_sb_mode)"
 
+    backup_sb_efivars
+
     case "$sb_mode" in
         "on")
             msg "Secure Boot is already set up. There is nothing to do."
@@ -248,8 +250,6 @@ This should never happen. Check your firmware's Secure Boot implementation."
     explain_and_confirm secure_boot
 
     pacman -Sy --needed efitools sbsigntools systemd-ukify || exit 1
-
-    backup_sb_efivars
 
     create_sb_keyset "$sb_tmp_dir"
     store_sb_keyset
