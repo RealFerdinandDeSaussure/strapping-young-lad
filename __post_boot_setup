@@ -330,22 +330,24 @@ enroll_tpm() {
 }
 
 enroll_fido2() {
-    local part device
-    declare -a args
+    local part device pin presence verification
     part="$1"
     device="$(get_secret_device "fido2-device")"
     if [ -z "$device" ]; then
         msg "No FIDO2 token found. Cannot continue with this secret."
         return
     fi
+    pin=no
+    presence=no
+    verification=no
 
     explain fido2_addons
-    ask_y_n "Would you like to enter your PIN when using this token?" || args+=("--fido2-with-client-pin=no")
-    ask_y_n "Would you like to confirm user presence when using this token?" || args+=("--fido2-with-user-presence=no")
-    ask_y_n "Would you like to use user verification when using this token?" && args+=("--fido2-with-user-verification=yes")
+    ask_y_n "Would you like to enter your PIN when using this token?" && pin=yes
+    ask_y_n "Would you like to confirm user presence when using this token?" && presence=yes
+    ask_y_n "Would you like to use user verification when using this token?" && verification=yes
 
     msg "Enrolling FIDO2 token..."
-    systemd-cryptenroll --fido2-device="${device}" "${args[*]}" "$part" || exit 1
+    systemd-cryptenroll --fido2-device="${device}" "--fido2-with-client-pin=${pin}" "--fido2-with-user-presence=${presence}" "--fido2-with-user-verification=${verification}" "$part" || exit 1
 }
 
 enroll_pkcs11() {
@@ -373,9 +375,9 @@ clear_secrets() {
         secrets+=("$line")
     done < <(systemd-cryptenroll | awk '{if ($1 != "SLOT") print $0}')
 
-    if grep -q "password" <<< "${secrets[*]}" && [ ${#secrets[@]} -gt 1 ]; then
+    slot="$(printf "%s\n" "${secrets[@]}" | awk '{if ($2 == "password") print $1}')"
+    if [ -n "$slot" ]&& [ ${#secrets[@]} -gt 1 ]; then
         explain remove_password
-        slot="$(printf "%s\n" "${secrets[@]}" | awk '{if ($2 == "password") print $1}')"
         ask_y_n "Would you like to wipe the password slot?" && { systemd-cryptenroll --wipe-slot="$slot" "$part" || exit 1; }
         secrets=()
         while read -r line; do
@@ -383,9 +385,9 @@ clear_secrets() {
         done < <(systemd-cryptenroll | awk '{if ($1 != "SLOT") print $0}')
     fi
 
-    if ! grep -q "recovery" <<< "${secrets[*]}" && [ ${#secrets[@]} -lt 2 ]; then
-        explain recovery
-        if ask_y_n "Would you like to enroll recovery codes?"; then
+    if ! grep -q "recovery" <<< "${secrets[*]}"; then
+        explain recovery "$recovery"
+        if ask_y_n "Would you like to enroll recovery keys?"; then
             systemd-cryptenroll --recovery-key "$part" 2>/dev/null | tee "$recovery"
             msg "The recovery key shown above was enrolled and written to ${recovery}."
             msg_bold "Store it safely offline outside of the encrypted partition and delete
@@ -440,6 +442,8 @@ finalize_luks() {
     get_config_var ROOT_PARTITION
 
     enroll_secrets "${config_vars[ROOT_PARTITION]}"
+
+    # TODO: write chosen unlock method to crypttab.initramfs
 
     explain luksheader_backup
     if ask_y_n "Would you like to create a backup of the LUKS header?"; then
