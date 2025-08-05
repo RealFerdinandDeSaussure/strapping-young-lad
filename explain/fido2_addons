@@ -1,0 +1,9 @@
+Apart from just being physically present, FIDO2 offers the following additional
+verification options:
+    - a PIN associated with the token
+    - user presence confirmation; for example a button on the token
+    - user verification; for example a fingerprint scanner on the token
+
+Be aware that your device may not support all of these. Responding yes to a
+question below that relates to feature unsupported by your FIDO2 token will have
+no effect.
