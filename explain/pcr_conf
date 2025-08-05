@@ -1,0 +1,7 @@
+Before we open uki.conf to check the PCR policy configuration, let's have a look
+at the configuration values we have written to the file:
+    - [PCRSignature:<name>]: the header introducing a policy and a
+                             user-definable name for it
+    - Phases: the phase(s) for which a digest should be created
+    - PCRPublicKey: path to the public key used for verifying
+    - PCRPrivateKey: path to the private key used for signing

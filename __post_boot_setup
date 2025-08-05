@@ -305,14 +305,13 @@ enroll_tpm() {
         return
     fi
 
-    explain pcr_keys
+    explain tpm_pcr
     priv_key=/etc/systemd/tpm2-pcr-private-key.pem
     pub_key=/etc/systemd/tpm2-pcr-public-key.pem
     msg "Generating PCR keys..."
     ukify genkey --pcr-private-key="$priv_key" --pcr-public-key="$pub_key" || exit 1
 
     msg "Editing ${uki_conf}..."
-    explain_and_confirm pcr_policies
 
     header="PCRSignature:initrd"
     grep -q "[${header}]" "$uki_conf" || echo -e "[${header}]\n" >> "$uki_conf"
@@ -320,9 +319,9 @@ enroll_tpm() {
     add_to_conf "$conf" "PCRPublicKey=${pub_key}" "$header"
     add_to_conf "$conf" "Phases=enter-initrd" "$header"
 
+    explain_and_confirm pcr_conf
     edit_file "$uki_conf"
 
-    explain_and_confirm enroll_pcr_policy
     msg "Rebuilding UKI(s)..."
     mkinitcpio -P || exit 1
     msg "Enroll TPM2 policy"
@@ -368,8 +367,6 @@ clear_secrets() {
     part="$1"
     recovery="$(get_safe_filename "$HOME/luks-recovery-key")"
     declare -a secrets
-
-    explain clear_secrets
 
     while read -r line; do
         secrets+=("$line")
