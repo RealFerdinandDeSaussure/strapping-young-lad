@@ -47,8 +47,12 @@ ${explanation//%[[:digit:]]/}"
 }
 
 explain_and_confirm() {
-    explain "$@"
-    pause
+    if [ -z "$QUIET" ]; then
+        explain "$@"
+        pause
+    else
+        return 1
+    fi
 }
 
 set_config_var_efi_partition() {

@@ -11,6 +11,7 @@ The total size of the largest continuous block of empty space is roughly
 $(get_largest_empty_blk_in_m "$disk") Megabyte."
 
     explain create_parts
+    # TODO: explain parttype
 
     if [ -z "$(get_part_by_type "$disk" "c12a7328-f81f-11d2-ba4b-00a0c93ec93b")" ]; then
         create_part "$disk" "EFI" "1G" "EF00"

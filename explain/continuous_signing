@@ -7,5 +7,5 @@ executables and edit uki.conf to include signing of UKI files part of their
 build process.
 
 To make sure that both the pacman hook and the UKI config are working, we will
-not sign anything manually but create the necessary files and simulate an update
-to the systemd package.
+not sign anything manually but create the necessary files and then simulate an
+update to the systemd package.

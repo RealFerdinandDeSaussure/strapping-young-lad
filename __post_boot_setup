@@ -40,9 +40,9 @@ backup_sb_efivars() {
     bckp_folder="$(get_safe_filename "$HOME/sb-keys.backup-$(date +%s)")"
     mkdir -p "$bckp_folder"
 
-    explain backup_efivars "${bckp_folder}"
-
     msg "Backing up Secure Boot efivars..."
+    explain_and_confirm backup_efivars "${bckp_folder}"
+
     for v in PK KEK db dbx; do
         efi-readvar -v $v -o "$bckp_folder/${v}.esl" || exit 1
     done

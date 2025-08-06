@@ -488,7 +488,7 @@ install_bootloader() {
     msg "Enabling automatic bootloader updates..."
     achroot systemctl enable systemd-boot-update.service || exit 1
 
-    msg "Writing bootloader config..."
+    msg "Editing bootloader config..."
 
     for e in /mnt/boot/EFI/Linux/*.efi; do
         echo -n "$e" | grep -q "fallback" && continue
@@ -500,7 +500,7 @@ timeout menu-hidden
 editor false
 console-mode max" > "$loader_conf"
 
-    explain_and_confirm bootloader_conf
+    explain_and_confirm bootloader_conf || pause
     edit_file "$loader_conf"
 }
 
