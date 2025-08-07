@@ -142,7 +142,13 @@ RouteMetric=100 " >> "$c"
         done
     fi
 
-    explain drop_in
+    if [ -n "$eth_serv" ] && [ -n "$wifi_serv" ]; then
+        explain drop_in "
+    - creating a smoother transition from wifi to ethernet connections"
+    else
+        explain drop_in
+    fi
+
     if ask_y_n "Would you like to extend the configuration presets?"; then
         msg "Creating custom drop-in file(s)..."
         test -n "$eth_serv" && create_net_dropin "$eth_serv" "$eth_custom"
@@ -372,14 +378,15 @@ generate_kcmdline() {
         config_vars[GPT_AUTOMOUNT]=$gpt_automount
     fi
     
+    msg "Editing kernel commandline file..."
     if [ "$gpt_automount" = 0 ]; then
-        explain_and_confirm kernel_cmdline_options "
+        explain_and_confirm kernel_cmdline_options " || pause
     - root: the root partition (i.e. the mapping of the unlocked cryptdevice)"
     else
-        explain_and_confirm kernel_cmdline_options
+        explain_and_confirm kernel_cmdline_options || pause
     fi
 
-    cmdline="rootflags=subvol=@ rw quiet bgrt_disable"
+    cmdline="rootflags=subvol=@ quiet bgrt_disable"
     test $gpt_automount = 0 && cmdline="root=/dev/mapper/$cryptroot $cmdline"
     echo "$cmdline" > /mnt/etc/kernel/cmdline
     edit_file /mnt/etc/kernel/cmdline
@@ -396,14 +403,11 @@ create_crypttab_initramfs() {
     if [ "$gpt_automount" = 1 ]; then
         explain crypttab.initramfs "
 
-As you have set up automounting, you can entirely ignore this file. However, if
-you have set up additional unlock methods for your encrypted partitions,
-crypttab.initramfs is a good place to specify them (the other place would be the
-kernel commandline). We will come back to enrolling other keys and adding them
-to crypttab.initramfs once we have booted into the new system."
-    ask_y_n "Would you like to edit crypttab.initramfs now?" || return
+As you have set up automounting, you do not need to create this file. After setting up hardware tokens to unlock the encrypted root volume, we will come back to crypttab.initramfs as it is needed to specify the unlock method at boot. If you would like, we can still create an crypttab.initramfs file now."
+    ask_y_n "Would you like to create and edit crypttab.initramfs now?" || return
     else
-        explain_and_confirm crypttab.initramfs
+        msg "Editing crypttab.initramfs..."
+        explain_and_confirm crypttab.initramfs || pause
     fi
 
     if [ "$gpt_automount" = 1 ]; then
@@ -507,7 +511,7 @@ console-mode max" > "$loader_conf"
 make_bootable() {
     test_system_mounted || exit 1
 
-    explain create_ukis
+    explain_and_confirm create_ukis
 
     setup_mkinitcpio
 

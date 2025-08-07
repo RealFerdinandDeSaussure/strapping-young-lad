@@ -1,5 +1,5 @@
-Apart from just being physically present, FIDO2 offers the following additional
-verification options:
+Apart from being a physical hardware token, FIDO2 offers the following
+additional verification options:
     - a PIN associated with the token
     - user presence confirmation; for example a button on the token
     - user verification; for example a fingerprint scanner on the token

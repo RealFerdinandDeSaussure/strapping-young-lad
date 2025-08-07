@@ -1,13 +1,15 @@
-systemd supports automounting the root partition (other partitions as well but
-for those we are using subvolumes), which makes things easier to maintain in the
-long run.
-The encrypted partition will be provided as /dev/gpt-auto-root-luks, the
-unlocked root partition as /dev/gpt-auto-root.
-These are the requirements for automounting support:
-    - using a systemd initramfs
+systemd supports automounting the root partition, which simplifies the boot
+setup. If this feature is used, the encrypted partition will be made available
+at /dev/gpt-auto-root-luks and the unlocked root partition at
+/dev/gpt-auto-root.
+
+For automounting to work, the following requirements must be met:
+    - the initramfs must use a systemd, not a busybox environment
     - the root and EFI system partitions must be on the same device
     - the correct GPT partition types must be set
-    - the bootloader must support it
+    - the bootloader must support automounting
 
-By following this script, all the criteria should have been met. Nevertheless,
-you can still choose to specify the root partition explicitly.
+By following this script, all criteria should be met. Nevertheless, you may
+still opt to not use this feature if you wish. In that case, the root partition
+will be specified explicitly for the different facilities involved in the boot
+process.

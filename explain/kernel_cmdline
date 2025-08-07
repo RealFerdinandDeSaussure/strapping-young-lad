@@ -1,2 +1,2 @@
-Next, we will generate the kernel command line, which will be integrated into
-the UKI.
+Next, we will write our kernel commandline to /etc/kernel/cmdline, which will
+be picked up by mkinitcpio and integrated into the UKI.

@@ -1,8 +1,22 @@
-First, we will create one or more unified kernel image(s) (UKI). This requires
-adapting the configuration and preset files for mkinitcpio and customizing the
-kernel command line. This script should take care of most of the work but each
-config file will be opened with a text editor ($EDITOR) so you can make custom
-adjustments.
+First, we will create one or more unified kernel image(s) (UKI).
+
+Normally, the boot loader will execute what is called an EFI boot stub, this is
+a kernel image packaged as a UEFI executable. Arguments can be passed to the
+kernel via the commandline, which can be set either directly in the bootloader
+or in its on-disk configuration. The EFI stub will load an initial RAM file
+system (initramfs, also called initial RAM disk, initrd) into memory. The
+initramfs contains the necessary drivers and programs to bootstrap the system.
+
+A unified kernel image packages the kernel, initramfs and commandline
+parameters into a single EFI executable. This makes the process more manageable
+and also allows usage of features like Secure Boot as it reduces the number of
+files involved in the early boot stage dramatically.
+
+To create a UKI, we will adapt the configuration and preset files for
+mkinitcpio and write our kernel commandline to a designated file. This script
+should take care of most of the work but each config file will be opened with a
+text editor ($EDITOR) so you can make custom adjustments.
+
 One thing to note is that we will be using a systemd based initramfs. ArchLinux
 by default uses busybox but using systemd gives us access to a couple of handy
 extensions during the boot process.
