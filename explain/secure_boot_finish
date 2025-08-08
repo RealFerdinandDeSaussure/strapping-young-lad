@@ -1,4 +1,6 @@
 That concludes the Secure Boot setup. You should now reboot the system and run
-this step again by executing syl.sh 10. If everything went as expected, the
-script will let you know that Secure Boot is already active after you agree to
-continue with the step.
+./syl.sh 10 to execute the current step again. When asked, do not choose to
+skip it!
+
+If everything went as expected, the script will let you know that Secure Boot
+is already active. You will then be taken to the next step.

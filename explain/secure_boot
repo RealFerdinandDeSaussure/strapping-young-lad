@@ -1,9 +1,8 @@
 Okay then, let's set up Secure Boot. Thankfully, you can use this script and do not
 have to go through this ordeal on your own.
 
-We are setting up Secure Boot before enrolling additional secrets for LUKS,
-because using the TPM2 as a secret in many cases requires binding to the Secure
-Boot state (don't worry if you do not know what any of that means).
-
-Before we start, let's install a couple of packages that we will need in the
-process.
+Before we start, we will install the following packages that will help us
+through the process:
+    - efitools: for accessing and manipulating UEFI variables
+    - sbsigntools: for signing keys and binaries
+    - systemd-ukify: for auto-signing UKIs after building them

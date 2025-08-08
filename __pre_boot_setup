@@ -370,7 +370,7 @@ generate_kcmdline() {
 
     explain kernel_cmdline
 
-    if [ "$(get_part_parent "$efi")" = "$(get_part_parent "$root")" ]; then
+    if [ "$(get_p_parent "$efi")" = "$(get_p_parent "$root")" ]; then
         explain gpt_automounting
         if ask_y_n "Would you like to use GPT automounting?"; then
             config_vars[GPT_AUTOMOUNT]=1

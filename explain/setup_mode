@@ -1,6 +1,16 @@
-To enter setup mode, you need to enter your motherboard's firmware (sometimes
-called BIOS) and delete the Platform Keys. Look for options allowing you to
-delete certificates or delete PK. After rebooting run syl.sh 10 to continue at
-the current step.
+To activate setup mode, you need to enter your motherboard's firmware
+(sometimes called BIOS) and delete the Platform Key.
+Look for options similar to:
+    - Key Management
+    - Secure Boot Custom Mode
+    - Clear Platform Key
+    - Delete PK
+    - Delete all Secure Boot variables
 
-"systemctl reboot --firmware-setup" can be used to boot into firmware.
+We will populate all Secure Boot variables, so if your motherboard has no
+option for just deleting the Platform Key, deleting all Secure Boot
+variables/keys is also fine.
+
+After rebooting run ./syl.sh 10 to re-run the current step. To boot directly
+into the firmware, you can run:
+systemctl reboot --firmware-setup

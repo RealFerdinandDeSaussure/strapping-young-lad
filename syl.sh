@@ -58,12 +58,14 @@ explain_and_confirm() {
 
 set_config_var_efi_partition() {
     get_config_var INSTALL_DISK
-    config_vars[EFI_PARTITION]="$(get_part "${config_vars[INSTALL_DISK]}" EFI)"
+    config_vars[EFI_PARTITION]="$(get_p "${config_vars[INSTALL_DISK]}" efi)"
+    test -z "${config_vars[EFI_PARTITION]}" && { msg "No EFI partition found."; exit 1; }
 }
 
 set_config_var_root_partition() {
     get_config_var INSTALL_DISK
-    config_vars[ROOT_PARTITION]="$(get_part "${config_vars[INSTALL_DISK]}" root)"
+    config_vars[ROOT_PARTITION]="$(get_p "${config_vars[INSTALL_DISK]}" root)"
+    test -z "${config_vars[ROOT_PARTITION]}" && { msg "No root partition found."; exit 1; }
 }
 
 set_config_var_root_encrypted_name() {

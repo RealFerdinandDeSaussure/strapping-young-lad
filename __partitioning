@@ -1,8 +1,18 @@
 # -*-bash-ts-*-
 # shellcheck source=SCRIPTDIR/syl.sh
 
+declare -A PART_TYPES GDISK_PART_TYPES
+PART_TYPES[root]="4f68bce3-e8cd-4db1-96e7-fbcaf984b709"
+GDISK_PART_TYPES[root]="8304"
+PART_TYPES[home]="933ac7e1-2eb4-4f13-b844-0e14e2aef915"
+GDISK_PART_TYPES[home]="8302"
+PART_TYPES[efi]="c12a7328-f81f-11d2-ba4b-00a0c93ec93b"
+GDISK_PART_TYPES[efi]="ef00"
+PART_TYPES[xbootldr]="bc13c2ff-59e6-4262-a352-b275fd6f7172"
+GDISK_PART_TYPES[xbootldr]="ea00"
+
 create_parts() {
-    local disk
+    local disk part
     disk="$1"
     msg "Before we start, let's have a look at the current partition table:
 "
@@ -15,19 +25,23 @@ $(get_largest_empty_blk_in_m "$disk") Megabyte."
     explain create_parts
     # TODO: explain parttype
 
-    if [ -z "$(get_part_by_type "$disk" "c12a7328-f81f-11d2-ba4b-00a0c93ec93b")" ]; then
-        create_part "$disk" "EFI" "1G" "EF00"
-        get_config_var EFI_PARTITION
-        mkfs.fat -F 32 "${config_vars[EFI_PARTITION]}" >/dev/null || exit 1
-        msg "EFI system partition formatted."
-    fi
+    part="$(get_p_by_type "$disk" "${PART_TYPES[efi]}")"
+    test -z "$part" && create_efi_part "$disk"
 
-    create_part "$disk" "root" "0" "8304"
+    part="$(get_p_by_type "$disk" "${PART_TYPES[root]}")"
+    test -z "$part" && create_p "$disk" "root" "0" "${GDISK_PART_TYPES[root]}"
 
     # TODO: XBOOTLDR support
 }
 
-get_part_parent() {
+create_efi_part() {
+    create_p "$1" "EFI" "1G" "${GDISK_PART_TYPES[efi]}"
+    get_config_var EFI_PARTITION
+    mkfs.fat -F 32 "${config_vars[EFI_PARTITION]}" >/dev/null || exit 1
+    msg "EFI system partition formatted."
+}
+
+get_p_parent() {
     lsblk -rnpo PKNAME "$1" | head -n1
 }
 
@@ -122,7 +136,7 @@ get_lowest_part_num() {
     exit 1
 }
 
-parse_part_size() {
+parse_p_size() {
     local size unit disk
     disk="$1"
 
@@ -167,25 +181,14 @@ parse_part_size() {
     esac
 }
 
-get_part() {
-    local part type disk
+get_p() {
+    local part disk
     disk="$1"
-
-    case "$2" in
-        "EFI")
-            type="c12a7328-f81f-11d2-ba4b-00a0c93ec93b"
-            ;;
-        "root")
-            type="4f68bce3-e8cd-4db1-96e7-fbcaf984b709"
-            ;;
-    esac
-
-    part="$(get_part_by_type "$disk" "$type")"
-    test -z "$part" && msg "No $1 partition found. Unable to continue."
+    part="$(get_p_by_type "$disk" "${PART_TYPES[$2]}")"
     echo -n "$part"
 }
 
-get_part_by_type() {
+get_p_by_type() {
     local disk type part
     disk="$1"
     type="$2"
@@ -198,7 +201,7 @@ get_part_by_type() {
     echo -n "$part"
 }
 
-create_part() {
+create_p() {
     local disk type default size part part_num start_sec end_sec
     disk=$1
     type=$2
@@ -210,7 +213,7 @@ create_part() {
     while true; do
         read -rp "  Please provide the desired size of partition '$type' (default: $default): " val
         test -z "$val" && val="$default"
-        size="$(parse_part_size "${config_vars[INSTALL_DISK]}" "$val")"
+        size="$(parse_p_size "${config_vars[INSTALL_DISK]}" "$val")"
         test ! $? -eq 0 && continue
         if [ "$(get_largest_empty_blk "$disk")" -ge "$size" ]; then
             break
@@ -227,11 +230,11 @@ create_part() {
     echo "$type partition created."
 
     part="$disk$part_num"
-    test_part "$part" || exit 1
+    test_p "$part" || exit 1
     config_vars["$(echo -n "${type}_PARTITION" | tr "[:lower:]" "[:upper:]")"]="$part"
 }
 
-test_part() {
+test_p() {
     if [ ! -b "$1" ]; then
         msg "Oh no, something wrent something no partition exists at $1."
         return 1
