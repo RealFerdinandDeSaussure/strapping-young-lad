@@ -431,8 +431,37 @@ enroll_secrets() {
     clear_secrets "$part"
 }
 
+insert_crypttab_line() {
+    local ct options name dev line
+    ct=/etc/crypttab.initramfs
+    get_config_var ROOT_ENCRYPTED_NAME
+    name="${config_vars[ROOT_ENCRYPTED_NAME]}"
+
+    dev=/dev/gpt/auto-root-luks
+    if [ ! -b "$dev" ]; then
+        get_config_var ROOT_PARTITION
+        dev="UUID=$(lsblk -ndo UUID "${config_vars[ROOT_PARTITION]}")"
+    fi
+
+    options="$(awk -v n="$name" '{if ($1 == n) print $4}')"
+    if [ -z "$options" ]; then
+        options="$1"
+    else
+        options+=",$1"
+    fi
+
+    line="$(awk -v n="$name" -v d="$dev" -v o="$options" '{if ($1 == n) print " "n" "d" none "o}' "$ct")"
+    if [ -n "$line" ]; then
+        sed -i "/^\s*${name}/d" "$ct"
+    else
+        line=" ${name} ${dev} none ${options}"
+    fi
+
+    echo "$line" >> "$ct"
+}
+
 set_primary_secret() {
-    local part prim
+    local part prim key
     declare -a secrets
     part="$1"
     while read -r i; do
@@ -460,6 +489,22 @@ corresponding to their respective devices are:
     - FIDO2: fido2-device=<device>
     - PKCS#11: pkcs11-token-uri=<uri>
 "
+    case "$prim" in
+        tpm2)
+            insert_crypttab_line "tpm2-device=$(get_secret_device tpm2-device)"
+            ;;
+        fido2)
+            insert_crypttab_line "fido2-device=$(get_secret_device fido2-device)"
+            ;;
+        pkcs11)
+            insert_crypttab_line "pkcs11-token-uri=$(get_secret_device "pkcs11-token-uri")"
+            ;;
+        *)
+            :
+            ;;
+    esac
+
+    edit_file /etc/crypttab.initramfs
 }
 
 finalize_luks() {
