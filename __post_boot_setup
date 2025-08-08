@@ -188,7 +188,7 @@ Target = usr/lib/systemd/boot/efi/systemd-boot*.efi
 [Action]
 Description = Signing systemd-boot for Secure Boot...
 When = PostTransaction
-Exec = /bin/sh -c '\''while read -r f; do /usr/bin/sbsign --key /root/sb-keys/db.key --cert /root/sb-keys/db.crt --output "${f}.signed" "$f" >/dev/null ; done;'\''
+Exec = /bin/sh -c '\''while read -r f; do /usr/lib/systemd/systemd-sbsign --private-key /root/sb-keys/db.key --certificate /root/sb-keys/db.crt --output "${f}.signed" "$f" >/dev/null ; done;'\''
 Depends = sh
 NeedsTargets' > "${hook_dir}/80-secureboot.hook"
 }
@@ -233,7 +233,7 @@ setup_sboot() {
             return
             ;;
         "setup")
-            :
+            backup_sb_efivars
             ;;
         "broken")
             msg "bootctl reports that we are in setup mode, yet there is a PK EFI variable set.
@@ -241,6 +241,7 @@ This should never happen. Check your firmware's Secure Boot implementation."
             exit 1
             ;;
         *)
+            backup_sb_efivars
             msg "Secure Boot needs to be in \"Setup Mode\" before we can continue."
             explain setup_mode
             ask_y_n_secure "Do you wish to reboot into firmware now?" && systemctl reboot --firmware-setup
