@@ -1,4 +1,5 @@
 # -*-bash-ts-*-
+# shellcheck source=SCRIPTDIR/syl.sh
 
 MS_GUID="77fa9abd-0359-4d32-bd60-28f4e78f784b"
 

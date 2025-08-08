@@ -1,5 +1,15 @@
 #!/bin/bash
 
+SCRIPTDIR="$(dirname "$(readlink -f "$0")")"
+STEPS=11
+STEP=$1
+
+# shellcheck source-path=SCRIPTDIR
+source "${SCRIPTDIR}/__btrfs"
+source "${SCRIPTDIR}/__partitioning"
+source "${SCRIPTDIR}/__post_boot_setup"
+source "${SCRIPTDIR}/__pre_boot_setup"
+
 set -o pipefail
 
 declare -A config_vars
@@ -16,20 +26,11 @@ if [ "$1" = "-q" ]; then
     shift
 fi
 
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-STEPS=11
-STEP=$1
-
-# shellcheck source=./*
-for i in "$SCRIPT_DIR/"__*; do
-    source "$i"
-done
-
 # --- functions
 explain() {
     test -n "$QUIET" && return
     local explanation_file explanation var
-    explanation_file="${SCRIPT_DIR}/explain/$1"
+    explanation_file="${SCRIPTDIR}/explain/$1"
     if [ ! -f "$explanation_file" ]; then
         msg_bold "Warning: Explanation file \"$explanation_file\" missing!"
         pause
@@ -109,21 +110,21 @@ get_safe_filename() {
 }
 
 msg_bold() {
-    local args
+    declare -a args
     while [ $# -gt 1 ]; do
-        args="$args $1"
+        args+=("$1")
         shift
     done
-    echo -e $args "\033[1m$1\033[0m" >&2
+    echo -e "${args[@]}" "\033[1m$1\033[0m" >&2
 }
 
 msg() {
-    local args
+    declare -a args
     while [ $# -gt 1 ]; do
-        args="$args $1"
+        args+=("$1")
         shift
     done
-    echo -e $args "\n$1" >&2
+    echo -e "${args[@]}" "\n$1" >&2
 }
 
 awk_calc() {
@@ -309,7 +310,8 @@ get_missing_pkgs() {
 }
 
 bootstrap() {
-    local kernel choice pkgs no_pkgs
+    local kernel choice
+    declare -a pkgs no_pkgs
     test_system_mounted || exit 1
 
     while true; do
@@ -321,27 +323,27 @@ bootstrap() {
         msg "Kernel package '$kernel' not found."
     done
 
-    pkgs+="$(prompt_for_extra_pkgs)"
+    IFS=' ' read -ra pkgs < <(prompt_for_extra_pkgs)
 
     explain common_packages
     while true; do
         read -rp "  Please enter additional packages separated by spaces here (default: none): " choice
-        no_pkgs="$(get_missing_pkgs "$choice")"
-        if [ -z "$no_pkgs" ]; then
-            pkgs+=" $choice"
+        IFS=' ' read -ra no_pkgs < <(get_missing_pkgs "$choice")
+        if [ "${#no_pkgs[@]}" -eq 0 ]; then
+            pkgs+=("$choice")
             break
         else
             msg "The following packages could not be found:"
-            printf -- "- %s\n" $no_pkgs
+            printf -- "- %s\n" "${no_pkgs[@]}"
         fi
     done
 
     # add btrfs-progs so we can put btrfs binary in the initramfs
-    pkgs+=" btrfs-progs"
+    pkgs+=("btrfs-progs")
 
-    msg "\nBootstrapping a base system with the following packages: base $kernel linux-firmware $pkgs..."
+    msg "\nBootstrapping a base system with the following packages: base $kernel linux-firmware ${pkgs[*]}..."
 
-    pacstrap -K /mnt base linux-firmware "$kernel" $pkgs || exit 1
+    pacstrap -K /mnt base linux-firmware "$kernel" "${pkgs[@]}" || exit 1
 }
 
 tab_display() {
@@ -425,7 +427,6 @@ test_system_mounted() {
 }
 
 prepare_for_reboot() {
-    local swap
     test_system_mounted || exit 1
     msg "For this, we will need git on the live medium. It is probably already installed
 but let's make sure."

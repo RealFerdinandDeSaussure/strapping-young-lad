@@ -1,4 +1,6 @@
 # -*-bash-ts-*-
+# shellcheck source=SCRIPTDIR/syl.sh
+
 setup_root() {
     local root
     get_config_var ROOT_ENCRYPTED_NAME

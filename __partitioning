@@ -1,4 +1,6 @@
 # -*-bash-ts-*-
+# shellcheck source=SCRIPTDIR/syl.sh
+
 create_parts() {
     local disk
     disk="$1"
@@ -57,8 +59,7 @@ setup_parts() {
         "")
             msg_bold "No."
             if ask_y_n "Would you like to create one?"; then
-                parted "$disk" mklabel gpt >/dev/null 2>&1
-                if [ $? -gt 0 ]; then
+                if parted "$disk" mklabel gpt >/dev/null 2>&1; then
                     msg "There was an error creating the GPT."
                     exit 1
                 else
@@ -222,7 +223,7 @@ create_part() {
     start_sec="$(sgdisk -F "$disk")" || exit 1
     end_sec=$(("$start_sec" + "$size"))
     test -n "$4" && guid=("-t" "$part_num:$4")
-    sgdisk -n "$part_num":"$start_sec":"$end_sec" "$disk" ${guid[*]} || exit 1
+    sgdisk -n "$part_num":"$start_sec":"$end_sec" "$disk" "${guid[@]}" || exit 1
     echo "$type partition created."
 
     part="$disk$part_num"

@@ -1,4 +1,6 @@
 # -*-bash-ts-*-
+# shellcheck source=SCRIPTDIR/syl.sh
+
  achroot() {
     arch-chroot /mnt "$@"
 }
@@ -358,7 +360,7 @@ adapt_hooks() {
 }
 
 generate_kcmdline() {
-    local gpt_automount efi root cmdline
+    local efi root cmdline
     get_config_var EFI_PARTITION
     efi="${config_vars[EFI_PARTITION]}"
     get_config_var ROOT_PARTITION
@@ -371,15 +373,14 @@ generate_kcmdline() {
     if [ "$(get_part_parent "$efi")" = "$(get_part_parent "$root")" ]; then
         explain gpt_automounting
         if ask_y_n "Would you like to use GPT automounting?"; then
-            gpt_automount=1
+            config_vars[GPT_AUTOMOUNT]=1
         else
-            gpt_automount=0
+            config_vars[GPT_AUTOMOUNT]=0
         fi
-        config_vars[GPT_AUTOMOUNT]=$gpt_automount
     fi
     
     msg "Editing kernel commandline file..."
-    if [ "$gpt_automount" = 0 ]; then
+    if [ "${config_vars[GPT_AUTOMOUNT]}" = 0 ]; then
         explain_and_confirm kernel_cmdline_options " || pause
     - root: the root partition (i.e. the mapping of the unlocked cryptdevice)"
     else
@@ -387,20 +388,19 @@ generate_kcmdline() {
     fi
 
     cmdline="rootflags=subvol=@ quiet bgrt_disable"
-    test $gpt_automount = 0 && cmdline="root=/dev/mapper/$cryptroot $cmdline"
+    test "${config_vars[GPT_AUTOMOUNT]}" = 0 && cmdline="root=/dev/mapper/$cryptroot $cmdline"
     echo "$cmdline" > /mnt/etc/kernel/cmdline
     edit_file /mnt/etc/kernel/cmdline
 }
 
 create_crypttab_initramfs() {
-    local gpt_automount root root_entry
-    get_config_var GPT_AUTOMOUNT
-    gpt_automount="${config_vars[GPT_AUTOMOUNT]}"
+    local root root_entry
     get_config_var ROOT_PARTITION
     root="${config_vars[ROOT_PARTITION]}"
+    get_config_var GPT_AUTOMOUNT
 
 
-    if [ "$gpt_automount" = 1 ]; then
+    if [ "${config_vars[GPT_AUTOMOUNT]}" = 1 ]; then
         explain crypttab.initramfs "
 
 As you have set up automounting, you do not need to create this file. After setting up hardware tokens to unlock the encrypted root volume, we will come back to crypttab.initramfs as it is needed to specify the unlock method at boot. If you would like, we can still create an crypttab.initramfs file now."
@@ -410,7 +410,7 @@ As you have set up automounting, you do not need to create this file. After sett
         explain_and_confirm crypttab.initramfs || pause
     fi
 
-    if [ "$gpt_automount" = 1 ]; then
+    if [ "${config_vars[GPT_AUTOMOUNT]}" = 1 ]; then
         root_entry="  cryptroot    /dev/gpt-auto-root-luks    none"
     else
         root_entry="  cryptroot    UUID=$(lsblk -ndo UUID "$root")    none"
@@ -467,19 +467,6 @@ setup_mkinitcpio() {
         mkdir -p "/mnt/$(dirname "$uki_folder")" || exit 1
         achroot mkinitcpio -p "$(basename -s ".preset" "$p")"
     done
-}
-
-write_loader() {
-    local preset base default_uki fallback_uki
-    preset="$1"
-    base="$2"
-    name="$(basename -s .preset "$1")"
-    name="${name^^}"
-    for i in default_uki fallback_uki; do
-        source <(grep "^${i}" "$preset")
-    done
-    echo "title        Arch${name}
-linux        "
 }
 
 install_bootloader() {
