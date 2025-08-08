@@ -5,8 +5,7 @@ part of this step, you will be able to unroll the following secrets:
     - a TPM2 device
     - a FIDO2 hardware token
     - a PKCS#11 hardware token
-    - a random keyfile on a flash drive
 
-After we have finalized our LUKS setup, we will create a backup of the LUKS
-header, so you will be able to restore your data in case the header gets
-corrupted.
+Afterwards, we will optionally take two more safety measures: Backing up the
+LUKS header, in case it gets corrupted and enrolling recovery codes, in case
+the primary keys get lost.

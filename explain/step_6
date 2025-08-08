@@ -1,13 +1,13 @@
-Now, we will make some changes to the bootstrapped system that ensure basic
-functionality.
-During this process, the following options can be customized:
-    - swap size and zram settings
-    - the fstab file
-    - system clock and time settings
-    - locale
-    - supported network interfaces
-    - root password
+To ensure basic functionality, a couple of things on the new system need to be set up. These include:
+    - swap and/or zram
+    - an fstab file for mounting volumes at boot
+    - the system clock and time settings
+    - locale(s)
+    - network interfaces
+    - a root password
 
-This includes quite a few steps and you will be offered to skip any of them in
-case you have already completed them manually. If you have not, skipping a step
-may result in an incomplete system.
+You will be prompted for customization options throughout the process. This is
+a rather involved step and to make it possible to jump in and out in-between,
+you will be offered to skip each part before it is run. Be careful however, as
+skipping a section entirely will result in an incomplete and possibly
+non-functional system.

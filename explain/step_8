@@ -1,3 +1,4 @@
-At this point, the system should be bootable. Before we will boot into it, we
-will clone this script's git repository to the new system's root folder so we
-can continue with the setup process after booting into the new system.
+At this point, you should be able to boot into your new system. Before doing so
+however, we will clone this script's git repository to the new system's root
+folder. This will allow you to continue with the installation after you have
+left the live image environment and are logged into your new system.

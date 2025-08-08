@@ -1,7 +1,12 @@
-Let's mount our partitions and subvolumes at the following mountpoints:
+For accessing our partitions and subvolumes, we now need to mount them. These
+are the different partitions/subvolumes that will be mounted as well as their
+respective mountpoints (non-existing mountpoints will be created dynamically):
     - @ subvolume: /mnt
     - @home subvolume: /mnt/home
-    - @snp subvolume: /mnt/snp (not necessary but helpful for the genfstab script)
+    - @snp subvolume: /mnt/snp
     - EFI system partition: /mnt/boot
 
-Should any of the mountpoints not exist, they will be created.
+While the @snp subvolume has no use for installing ArchLinux, mounting it now
+means that the genfstab script will be able to pick it up and write its
+mountpoint to /etc/fstab. This way, the subvolume will be mounted by default on
+system boot.

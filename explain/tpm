@@ -10,7 +10,8 @@ lower entropy as the TPM will lock after too many failed attempts and thus
 prevent brute-force attempts.
 
 This script will only enroll TPM-based secrets along with a PIN. A TPM that
-unlocks a root partition without any further protective measures offers only the
-most basic protection in the event of a stolen system. However, combined with a
-low to medium entropy PIN, enrolling the TPM state offers strong protection
-against boot chain tampering as well as unauthorized physical access.
+unlocks a root partition without any further protective measures offers only
+the most basic protection in the event of a stolen system. However, combined
+with a low to medium entropy PIN, enrolling the TPM as a key offers strong
+protection against boot chain tampering as well as unauthorized physical
+access.

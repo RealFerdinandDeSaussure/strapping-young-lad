@@ -1,3 +1,6 @@
-Yes, what it says in the headline. We will first create a unified kernel image
-(UKI) and then install the bootloader. This is the most critical step of the
-installation process as errors made here can result in an unbootable system.
+Yes, what it says in the headline. We will:
+    - create one or multiple unified kernel image(s) (UKI)
+    - install a bootloader (sytemd-boot)
+
+This is one of the most critical steps of the installation process as errors
+may result in an unbootable system.

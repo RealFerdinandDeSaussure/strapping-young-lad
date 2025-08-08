@@ -1,4 +1,5 @@
 We will set up ufw to deny ALL incoming traffic and let all outgoing traffic
 through. For applications like cloud services, Syncthing, SSH or Torrent
-seeders, you will need to adapt the ufw setup later. Oftentimes, this can be
-done by simply running "ufw allow [application]".
+seeders, you will need to adapt this setup later. Oftentimes, this can be
+done by simply running the command
+ufw allow <application-name>

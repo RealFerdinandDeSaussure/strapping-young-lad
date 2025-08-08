@@ -1,7 +1,10 @@
-Next, we will encrypt the root partition using LUKS2 encryption. You will be
-asked for a password. If you intend to use this password as a decryption key on
-the final system, you should choose a secure one.
-During a later step, you will have the opportunity to enroll other keys as well.
-You may then also delete the password you set during this step.
+With the partitions set up, we can proceed to encryption. In general, all
+partitions on a system should ideally be encrypted. The exception is the boot
+partition (or partitions if you are using XBOOTLDR) because the UEFI firmware
+cannot read an encrypted EFI system partition. While GRUB does support reading
+from an encrypted boot partition, this approach is generally discouraged as it
+circumvents the Linux encryption stack. For this reason, we will only encrypt
+our root partition. 
 
-After encryption, the root partition will be unlocked so it can be used in the next steps.
+Afterwards, the root partition will be unlocked so it can be used in the next
+steps.

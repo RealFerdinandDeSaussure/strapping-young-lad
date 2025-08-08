@@ -3,16 +3,18 @@ Using Secure Boot requires signing different parts of the bootchain and
 verifying their signature before execution.
 
 Device firmware can also be factory-signed and make use of Secure Boot for
-verification. Microsoft's certificates are used for signing in this case will be
-the ones provided by Microsoft. For this reason, we will also enroll Microsoft's
-keys. This is non-optional as not doing so can run the risk of bricking your
-entire system.
+verification. In these cases, Microsoft's keys have been used for signing and
+not having their certificates enrolled, will result in the device not working.
+As a worst case, this could cause your entire system to be bricked. For this
+reason, we will also enroll Microsoft's keys. This is non-optional as it has no
+downsides and could prevent dramatic damage to your system.
 
-All the commands in this step are well documented and are considered safe. I use
-this script myself to set up Secure Boot on my system and have never run into
-any issues. Nevertheless, you yourself are responsible for reading through the
-script and taking proper care when executing this step. I TAKE NO RESPONSIBILITY
-FOR ANY DAMAGE YOUR SYSTEM MAY SUSTAIN.
+For the reason listed above, Secure Boot can be dangerous if set up improperly
+and on devices with factory-signed firmware. This script takes the necessary
+precautions to bypass any potentially troublesome effects of setting up Secure
+Boot. However, you yourself are responsible for making sure you know what you
+are doing when running this script. I take no responsibility for any damage
+your system may sustain.
 
-Secure Boot is a useful security feature but if this is all a bit much for you,
-feel free to skip this step.
+Now that the scary stuff is out of the way, let's continue on. Or let's not, in
+case you choose to skip this step.

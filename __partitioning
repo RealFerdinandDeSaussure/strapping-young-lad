@@ -97,6 +97,7 @@ setup_parts() {
 encrypt_parts() {
     # very simple at this point but maybe in the future other partition schemes
     # will be supported
+    explain_and_confirm encrypt_parts
     get_config_var ROOT_PARTITION
     encrypt_p "${config_vars[ROOT_PARTITION]}" cryptroot
     config_vars[ROOT_ENCRYPTED_NAME]="cryptroot"
