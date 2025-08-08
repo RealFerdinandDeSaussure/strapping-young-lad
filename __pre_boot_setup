@@ -425,7 +425,8 @@ setup_mkinitcpio() {
     local BINARIES mkcp_conf hooks uki_folder
     mkcp_conf="$(mktemp)"
     
-    explain mkinitcpio.conf
+    msg "Editing mkinitcpio.conf..."
+    explain_and_confirm mkinitcpio.conf || pause
     cp /mnt/etc/mkinitcpio.conf "$mkcp_conf"
 
     source <(grep "^BINARIES" "$mkcp_conf")
@@ -436,8 +437,6 @@ setup_mkinitcpio() {
 
     adapt_hooks "$mkcp_conf"
 
-    msg "Let's have a look at the edited mkinitcpio.conf. Check it for errors and make
-additional edits if desired."
     pause
     edit_file "$mkcp_conf"
     cp "$mkcp_conf" /mnt/etc/mkinitcpio.conf

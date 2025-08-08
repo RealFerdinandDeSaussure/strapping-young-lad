@@ -1,4 +1,5 @@
-The keys have been enrolled. At this point, all EFI binaries signed with
-Microsoft's keys should be bootable. The firmware will also enable Secure Boot
-user mode on the next reboot. Without signing the kernel and the bootloader, the
-system will fail to boot. So let's do that next.
+All keys have been enrolled. At this point, all UEFI binaries signed with
+Microsoft's keys should be bootable. On next boot, Secure Boot will be enabled
+and in user mode. This also means that unsigned UEFI binaries such as
+systemd-boot and our UKIs will no longer boot. Therefore, we will sign with our
+custom keys next.

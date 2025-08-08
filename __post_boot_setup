@@ -253,9 +253,9 @@ This should never happen. Check your firmware's Secure Boot implementation."
 
     create_sb_keyset "$sb_tmp_dir"
     store_sb_keyset
+
     create_ms_db "$ms_tmp_dir" "$sb_tmp_dir"
 
-    explain ms_keys
     enroll_keys "$sb_tmp_dir" "$ms_tmp_dir"
 
     explain_and_confirm post_enrollment
@@ -407,7 +407,7 @@ enroll_secrets() {
         secrets=("TPM2" "${secrets[@]}")
     fi
 
-    explain secrets
+    explain_and_confirm secrets
 
     while true; do
         msg_bold "Currently enrolled secrets:"

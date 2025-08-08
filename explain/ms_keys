@@ -1,4 +1,24 @@
-Okay, as promised, we will also enroll Microsoft's keys. For this purpose, we
-will now create a database update file which we can later apply to our own
-database. This requires downloading a couple of certificates from their
-website.
+As promised, we will also enroll Microsoft's keys. For this purpose, we will
+download their certificates, concatenate the db and KEK certificates together
+respectively and create update files that can be enrolled together with our own
+keys. The following certificates will be downloaded:
+    - db certificates for verifying Microsoft Windows binaries
+    - db certificates for verifying third-party binaries, such as UEFI drivers
+        or option ROMs
+    - KEK certificates so Windows may update the dbx and db variables for newer
+        signed Windows images
+
+Each of these include two certificates, one issued in 2011 (planned to be
+phased out in 2026) and one issued in 2023. If you do not dual-boot, you
+technically only need the db certificates for third-party binaries so that
+signed firmware can be verified and does not brick your system. However, when
+bricking your devices' firmware is even a remote possibility, it is best to err
+on the side of caution.
+
+Furthermore, there are generally no downsides to enrolling all of their keys.
+Should you plan to use your personal keys for a criminal undertaking so
+grandscale that it catches Microsoft's attention, they may revoke your keys. In
+that case, upon booting Windows, they will use their KEKs to add your keys to
+the dbx variable and your system will no longer be able to securely boot Linux.
+If you have no such plans, there is no downside at all to enrolling all of
+their keys.

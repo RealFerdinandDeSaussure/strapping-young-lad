@@ -1,9 +1,19 @@
-Now, we will edit the mkinitcpio preset file(s). Not much custom input should be
-required here. You can comment out the default_options line if you would like to
-suppress the splash boot image.
+Now, we will edit the mkinitcpio preset file(s). Each preset file corresponds
+to an installed kernel, allowing configuration on a per-kernel based. Further
+"sub-presets" may be specified in the file. By default, this only includes
+"default" and "fallback". Configuration for both these presets is done in the
+same file.
 
-Be aware that you do not have to save generated UKIs at the path defined in the
-preset config but it is recommended to do so. The bootloader (systemd-boot) will
-only create entries automatically for images located at EFI/Linux on your EFI
-system partition. If you put them in a different location, you will have to
-create the corresponding entries manually.
+You can set the path to the generated image file (*_image=) as well as the path
+to the final UKI (*_uki=) in the preset file. The *_options variable also
+allows specifiyng additional settings that will be passed as parameters to
+mkinitcpio when building the preset. If you know what you are doing, you can
+also override a lot of the default options set in mkinitcpio.conf here.
+
+In general however, no further editing of the presets should be needed at this
+point. You can comment out the default_options line if you would like to
+suppress the splash boot image. You could also specify a different save path
+for the UKI, if you really wanted to. However, be aware that the bootloader
+(systemd-boot) will only create entries automatically for images located under
+/EFI/Linux on your EFI system partition. If you put them in a different
+location, you will have to create the corresponding entries manually.
