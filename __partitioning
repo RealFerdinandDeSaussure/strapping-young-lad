@@ -73,7 +73,7 @@ setup_parts() {
         "")
             msg_bold "No."
             if ask_y_n "Would you like to create one?"; then
-                if parted "$disk" mklabel gpt >/dev/null 2>&1; then
+                if ! parted "$disk" mklabel gpt >/dev/null 2>&1; then
                     msg "There was an error creating the GPT."
                     exit 1
                 else

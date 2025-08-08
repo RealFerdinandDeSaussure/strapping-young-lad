@@ -1,5 +1,5 @@
 First, we will prepare our disk for installation. At least two partitions are
-required to be present on it:
+required to be present on the disk:
     - an EFI system partition
     - a root partition
 
