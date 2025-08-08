@@ -1,8 +1,12 @@
-The last step for creating a UKI is setting up crypttab.initramfs. This is a
-crypttab file that will be added to the image and will be used at boot time to
-unlock any encrypted devices listed in it.
+The file /etc/crypttab.initramfs will be added to the initramfs as a regular
+crypttab file. Each device listed there will be unlocked at boot. This is
+especially important for an encrypted root partition - the system needs to be
+aware of its location and how to unlock it. It must be added to
+crypttab.initramfs, otherwise it will remain locked and boot will fail.
 
-A crypttab file looks similar to an fstab file but is used for unlocking volumes, not for mounting them. As with an fstab file, each line represents a volume and consists of four fields:
+A crypttab file looks similar to an fstab file but is used for unlocking
+volumes, not for mounting them. As with an fstab file, each line represents a
+volume and consists of four fields:
     - volume-name: the name of the mapping the unlocked volume will take
     - encrypted device: the path to the encrypted volume or its UUID if
         starting with "UUID="

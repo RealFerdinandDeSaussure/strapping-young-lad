@@ -56,19 +56,19 @@ explain_and_confirm() {
     fi
 }
 
-set_config_var_efi_partition() {
+get_config_var_efi_partition() {
     get_config_var INSTALL_DISK
     config_vars[EFI_PARTITION]="$(get_p "${config_vars[INSTALL_DISK]}" efi)"
     test -z "${config_vars[EFI_PARTITION]}" && { msg "No EFI partition found."; exit 1; }
 }
 
-set_config_var_root_partition() {
+get_config_var_root_partition() {
     get_config_var INSTALL_DISK
     config_vars[ROOT_PARTITION]="$(get_p "${config_vars[INSTALL_DISK]}" root)"
     test -z "${config_vars[ROOT_PARTITION]}" && { msg "No root partition found."; exit 1; }
 }
 
-set_config_var_root_encrypted_name() {
+get_config_var_root_encrypted_name() {
     local crypt_name
     get_config_var ROOT_PARTITION
 
@@ -81,16 +81,16 @@ set_config_var_root_encrypted_name() {
 }
 
 get_config_var() {
-    local setter val env
+    local getter val env
     test -n "${config_vars["$1"]}" && return
     # try to get value from the environment
     env=SYL_"${1^^}"
     config_vars["$1"]="${!env}"
     test -n "${config_vars["$1"]}" && return
 
-    setter="set_config_var_${1,,}"
-    if declare -F "$setter" >/dev/null; then
-        $setter
+    getter="get_config_var_${1,,}"
+    if declare -F "$getter" >/dev/null; then
+        $getter
         test -n "${config_vars["$1"]}" && return
     fi
 
