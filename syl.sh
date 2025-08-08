@@ -43,8 +43,8 @@ explain() {
         explanation="${explanation//"%$var"/"$val"}"
         ((++var))
     done
-    echo "
-${explanation//%[[:digit:]]/}"
+    echo ""
+    echo "${explanation//%[[:digit:]]/}" | pageshow
 }
 
 explain_and_confirm() {
@@ -348,6 +348,22 @@ bootstrap() {
     pacstrap -K /mnt base linux-firmware "$kernel" "${pkgs[@]}" || exit 1
 }
 
+pageshow() {
+    local rows
+    declare -a output
+    rows=$(($(tput lines) - 1))
+    while read -r line; do
+        output+=("$line")
+    done < <(cat -)
+
+    if [ ${#output[@]} -gt $rows ]; then
+        output+=("  -> Press q to exit the pager and continue")
+        printf "%s\n" "${output[@]}" | less
+    else
+        printf "%s\n" "${output[@]}" 
+    fi
+}
+
 tab_display() {
     local count
     declare -a output
@@ -360,12 +376,7 @@ tab_display() {
     # (( count % 4 > 0 )) && output+=("")
     test -z "${output[-1]}" && output=("${output[@]:0:((${#output[@]} - 1))}")
 
-    if [ ${#output[@]} -gt $(($(tput lines) - 1)) ]; then
-        printf "%s\n" "${output[@]}" | less
-    else
-        printf "%s\n" "${output[@]}"
-    fi
-
+    printf "%s\n" "${output[@]}" | pageshow
 }
 
 select_item() {
