@@ -352,7 +352,7 @@ pageshow() {
     local rows
     declare -a output
     rows=$(($(tput lines) - 1))
-    while read -r line; do
+    while IFS= read -r line; do
         output+=("$line")
     done < <(cat -)
 
@@ -559,5 +559,6 @@ new system."
 
     for s in $(seq "$STEP" "$STEPS"); do
         step "$s"
+        clear
     done
 fi

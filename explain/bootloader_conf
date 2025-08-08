@@ -4,16 +4,14 @@ files in /boot/EFI/Linux. You can customize the bootloader config further, if
 you would like. Here is an overview of the settings we added to bootloader
 config and their current value:
     - default: the default entry (supporting wild cards) that will be booted if
-               there is no user input at boot; set to a value determined by the
-               script or to nothing if it was unsuccesful in finding a UKI to
-               be booted
+        there is no user input at boot; set to a value determined by the script
+        or to nothing if it was unsuccesful in finding a UKI to be booted
     - timeout: how long the boot menu will be shown; set to menu-hidden, which
-               will not display the menu unless the spacebar is held down at
-               boot
+        will not display the menu unless the spacebar is held down at boot
     - editor: whether or not to allow editing the kernel commandline from the
-              boot menu; disabled for security
+        boot menu; disabled for security
     - console-mode: resolution of the boot menu; set to max, the highest
-                    possible resolution
+        possible resolution
 
 If you put UKIs in a folder other than /boot/EFI/Linux, or have other EFI
 applications you would like to include in the boot menu, remember to create
