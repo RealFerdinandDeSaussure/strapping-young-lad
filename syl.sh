@@ -19,7 +19,8 @@ man_config_vars[INSTALL_DISK]="Path to the block device that holds or should hol
 man_config_vars[ROOT_ENCRYPTED_NAME]="Name of the mapping for the unlocked encrypted root partition."
 man_config_vars[GPT_AUTOMOUNT]="Whether the root partition should be mounted automatically by systemd (0=no, 1=yes)."
 man_config_vars[ROOT_PARTITION]="Path to the partition that should hold the root file system."
-man_config_vars[EFI_PARTITION]="Path to the partition that should hold the root file system."
+man_config_vars[EFI_PARTITION]="Path to the EFI system partition."
+man_config_vars[XBOOTLDR_PARTITION]="Path to the Linux extended boot loader partition."
 
 if [ "$1" = "-q" ]; then
     QUIET=yes
@@ -68,6 +69,11 @@ get_config_var_root_partition() {
     test -z "${config_vars[ROOT_PARTITION]}" && { msg "No root partition found."; exit 1; }
 }
 
+get_config_var_xbootldr_partition() {
+    get_config_var INSTALL_DISK
+    config_vars[XBOOTLDR_PARTITION]="$(get_p "${config_vars[INSTALL_DISK]}" xbootldr)"
+}
+
 get_config_var_root_encrypted_name() {
     local crypt_name
     get_config_var ROOT_PARTITION
@@ -82,16 +88,16 @@ get_config_var_root_encrypted_name() {
 
 get_config_var() {
     local getter val env
-    test -n "${config_vars["$1"]}" && return
+    test -n "${config_vars["$1"]+x}" && return
     # try to get value from the environment
     env=SYL_"${1^^}"
     config_vars["$1"]="${!env}"
-    test -n "${config_vars["$1"]}" && return
+    test -n "${config_vars["$1"]+x}" && return
 
     getter="get_config_var_${1,,}"
     if declare -F "$getter" >/dev/null; then
         $getter
-        test -n "${config_vars["$1"]}" && return
+        test -n "${config_vars["$1"]+x}" && return
     fi
 
     msg "Setting '$1' not defined. Normally, this is because a previous step was skipped.
@@ -113,7 +119,7 @@ get_safe_filename() {
 
 msg_bold() {
     declare -a args
-    while [ $# -gt 1 ]; do
+    while (( $# )); do
         args+=("$1")
         shift
     done
@@ -122,7 +128,7 @@ msg_bold() {
 
 msg() {
     declare -a args
-    while [ $# -gt 1 ]; do
+    while (( $# )); do
         args+=("$1")
         shift
     done
@@ -392,11 +398,13 @@ select_item() {
 }
 
 mount_system() {
-    local root efi
+    local root efi xbootldr
     get_config_var ROOT_ENCRYPTED_NAME
     root="/dev/mapper/${config_vars[ROOT_ENCRYPTED_NAME]}"
     get_config_var EFI_PARTITION
     efi="${config_vars[EFI_PARTITION]}"
+    get_config_var XBOOTLDR_PARTITION
+    xbootldr="${config_vars[XBOOTLDR_PARTITION]}"
     declare -A mounts
     mounts[@]=/mnt
     mounts[@home]=/mnt/home
@@ -407,8 +415,14 @@ mount_system() {
         mount_subvol "$root" "$sv" "${mounts[$sv]}"
     done
 
-    msg "Mounting EFI system partition..."
-    mount --mkdir -o fmask=0077,dmask=0077 "$efi" /mnt/boot
+    if [ -n "$xbootldr" ]; then
+        msg "Mounting EFI system and XBOOTLDR partitions..."
+        mount --mkdir -o fmask=0077,dmask=0077 "$efi" /mnt/efi
+        mount --mkdir -o fmask=0077,dmask=0077 "$xbootldr" /mnt/boot
+    else
+        msg "Mounting EFI system partition..."
+        mount --mkdir -o fmask=0077,dmask=0077 "$efi" /mnt/boot
+    fi
 }
 
 test_on_live_system() {
@@ -420,23 +434,31 @@ test_on_live_system() {
 }
 
 test_system_mounted() {
-    local root root_query efi_query
+    local root arr err
     get_config_var ROOT_ENCRYPTED_NAME
     root="/dev/mapper/${config_vars[ROOT_ENCRYPTED_NAME]}"
     get_config_var EFI_PARTITION
     efi="${config_vars[EFI_PARTITION]}"
-    root_query="PARTTYPE == \"${PART_TYPES[root]}\" && MOUNTPOINT == \"/mnt\""
-    efi_query="PARTTYPE == \"$${PART_TYPES[efi]}\" && MOUNTPOINT == \"/mnt/boot\""
-
-    if [ -z "$(lsblk -nQ "$root_query")" ]; then
-        msg "root partition $root is not mounted at /mnt. Mount it before continuing."
-        return 1
-    elif [ -z "$(lsblk -nQ "$efi_query")" ]; then
-        msg "EFI system partition $efi not mounted at /mnt/boot. Mount it before continuing."
-        return 1
+    get_config_var XBOOTLDR_PARTITION
+    xbootldr="${config_vars[XBOOTLDR_PARTITION]}"
+    declare -a mntpoints
+    mntpoints+=("$(echo -ne "root\t${PART_TYPES[root]}\t${root}\t/mnt")")
+    if [ -n "$xbootldr" ]; then
+        mntpoints+=("$(echo -ne "EFI system\t${PART_TYPES[efi]}\t${efi}\t/mnt/efi")")
+        mntpoints+=("$(echo -ne "XBOOTLDR\t${PART_TYPES[xbootldr]}\t${xbootldr}\t/mnt/boot")")
     else
-        return 0
+        mntpoints+=("$(echo -ne "EFI system\t${PART_TYPES[efi]}\t${efi}\t/mnt/boot")")
     fi
+
+    for i in "${mntpoints[@]}"; do
+        IFS=$'\t' read -ra arr <<< "$i"
+        lsblk -nQ "PARTTYPE == \"${arr[1]}\" && MOUNTPOINT == \"${arr[3]}\"" >/dev/null && continue
+        msg "${arr[0]} partition ${arr[2]} not mounted at ${arr[3]}. Mount it before continuing."
+        err=1
+    done
+
+    test -n "$err" && return 1
+    return 0
 }
 
 prepare_for_reboot() {
@@ -479,8 +501,14 @@ step() {
             ;;
         4)
             msg_bold "STEP FOUR: Mounting partitions and subvolumes"
-            explain step_4
-            ask_for_skip && mount_system
+            get_config_var XBOOTLDR_PARTITION
+            if [ -n "${config_vars[XBOOTLDR_PARTITION]}" ]; then
+                explain step_4 "EFI system partition: /mnt/efi
+    - XBOOTLDR partition: /mnt/boot"
+            else
+                explain step_4 "EFI system partition: /mnt/boot"
+            fi
+                ask_for_skip && mount_system
             ;;
         5)
             msg_bold "STEP FIVE: Bootstrapping the system"

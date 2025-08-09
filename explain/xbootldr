@@ -1,0 +1,15 @@
+In addition to the EFI system partition, a Linux extended boot loader partition
+(XBOOTLDR) can be created. This allows separating the files required for booting
+Linux separate from the boot loader. The boot loader will reside on the
+EFI system partition, kernel and initramfs files will reside on XBOOTLDR.
+
+If you already have an EFI system partition of adequate size, creating an
+additional XBOOTLDR partition is not recommended. Having two separate boot
+partitions will then only add complexity without any benefits. The main use case
+for creating XBOOTLDR is extending an EFI system partition that is too small
+to reliably host kernel and initramfs files. This is often the case, if it was
+created by Windows.
+
+The XBOOTLDR partition can have any file system that your UEFI implementation
+can read. For compatibility reasons, this script will nevertheless always format
+the partition with FAT32.

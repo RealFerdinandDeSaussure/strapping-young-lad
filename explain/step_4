@@ -4,7 +4,7 @@ respective mount points (non-existing mount points will be created dynamically):
     - @ subvolume: /mnt
     - @home subvolume: /mnt/home
     - @snp subvolume: /mnt/snp
-    - EFI system partition: /mnt/boot
+    - %1
 
 While the @snp subvolume has no use for installing Arch Linux, mounting it now
 means that the genfstab script will be able to pick it up and write its

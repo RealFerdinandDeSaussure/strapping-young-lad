@@ -359,20 +359,32 @@ adapt_hooks() {
     sed -i 's/^HOOKS=.*/'"$hooks"'/' "$1" || exit 1
 }
 
-generate_kcmdline() {
-    local efi root cmdline
+test_parts_on_same_disk() {
+    local efi root xbootldr
     get_config_var EFI_PARTITION
-    efi="${config_vars[EFI_PARTITION]}"
+    efi="$(get_p_parent "${config_vars[EFI_PARTITION]}")"
     get_config_var ROOT_PARTITION
-    root="${config_vars[ROOT_PARTITION]}"
+    root="$(get_p_parent "${config_vars[ROOT_PARTITION]}")"
+    get_config_var XBOOTLDR_PARTITION
+
+    test "$efi" = "$root" || return 1
+    if [ -n "${config_vars[XBOOTLDR_PARTITION]}" ]; then
+        xbootldr="$(get_p_parent "${config_vars[XBOOTLDR_PARTITION]}")"
+        test "$root" = "$xbootldr" || return 1
+    fi
+    return 0
+}
+
+generate_kcmdline() {
+    local cryptroot cmdline
     get_config_var ROOT_ENCRYPTED_NAME
     cryptroot="${config_vars[ROOT_ENCRYPTED_NAME]}"
 
     explain kernel_cmdline
 
-    if [ "$(get_p_parent "$efi")" = "$(get_p_parent "$root")" ]; then
+    if test_parts_on_same_disk; then
         explain gpt_automounting
-        if ask_y_n "Would you like to use GPT automounting?"; then
+        if ask_y_n "Would you like to use GPT auto-mounting?"; then
             config_vars[GPT_AUTOMOUNT]=1
         else
             config_vars[GPT_AUTOMOUNT]=0
