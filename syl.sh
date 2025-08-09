@@ -92,12 +92,12 @@ get_config_var() {
     # try to get value from the environment
     env=SYL_"${1^^}"
     config_vars["$1"]="${!env}"
-    test -n "${config_vars["$1"]+x}" && return
+    test -n "${config_vars["$1"]}" && return
 
     getter="get_config_var_${1,,}"
     if declare -F "$getter" >/dev/null; then
         $getter
-        test -n "${config_vars["$1"]+x}" && return
+        test -n "${config_vars["$1"]}" && return
     fi
 
     msg "Setting '$1' not defined. Normally, this is because a previous step was skipped.

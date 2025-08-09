@@ -2,8 +2,8 @@ For encryption, we will use LUKS2, the most recent standard of the Linux
 Unified Key Setup specification.
 
 You will be asked for a password. At a later step, we will cover enrolling
-hardware tokens, which usually provide stronger security than most passwords.
-If you plan on enrolling a hardware token later on, you can choose a very
-simple password at this point as we will wipe its key slot after your token has
-been enrolled. Otherwise, you should use a reasonably strong password with
-sufficient entropy.
+hardware tokens, which provide stronger security than most passwords. If you
+plan on enrolling a hardware token later on, you can choose a very simple
+password at this point as we will wipe its key slot after your token has been
+enrolled. Otherwise, you should use a reasonably strong password with sufficient
+entropy.

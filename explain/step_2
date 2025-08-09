@@ -4,7 +4,7 @@ partition (or partitions if you are using an XBOOTLDR partition) because the
 UEFI firmware cannot read an encrypted EFI system partition. While GRUB does
 support reading from an encrypted boot partition, this approach is generally
 discouraged as it adds another layer of security, increases complexity and is
-much more difficult to maintain. For this reason, we will only encrypt our root
+more difficult to maintain. For this reason, we will only encrypt our root
 partition.
 
 Afterwards, the root partition will be unlocked so it can be used in the next
