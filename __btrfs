@@ -41,6 +41,7 @@ format_part_btrfs() {
     local part type fs_label
     part=$1
     type=$2
+    echo ""
     read -rp "  Please specify a label for the btrfs file system that will be created on $part (default: $type): " fs_label
     test -z "$fs_label" && fs_label="$type"
     mkfs.btrfs -L "$fs_label" "$part" >/dev/null || exit 1

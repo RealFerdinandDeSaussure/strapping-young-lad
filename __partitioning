@@ -24,7 +24,6 @@ The total size of the largest continuous block of empty space is roughly
 $(get_largest_empty_blk_in_m "$disk") Megabyte."
 
     explain create_parts
-    # TODO: explain parttype
 
     part="$(get_p_by_type "$disk" "${PART_TYPES[efi]}")"
     test -z "$part" && create_efi_p "$disk"
@@ -141,7 +140,8 @@ encrypt_p() {
         msg "Passwords do not match. Please try again."
     done
 
-    msg "Encrypting partition at $part. THIS WILL IRREVOCABLY DESTROY ALL DATA ON $part."
+    msg "Encrypting partition at $part.
+THIS WILL IRREVOCABLY DESTROY ALL DATA ON $part."
     ask_y_n_secure "Are you sure you want to continue?" || exit 1
 
     (printf "%s" "$pw" | cryptsetup luksFormat --key-file - "$part") || exit 1
@@ -217,7 +217,7 @@ get_p_by_type() {
     disk="$1"
     type="$2"
     while read -r line; do
-        if [ "$(echo "$line" | cut -d" " -f2 | tr "[:upper:]" "[:lower:]")" = "$type" ]; then
+        if [ "$(echo "${line@L}" | cut -d" " -f2)" = "$type" ]; then
             part="$(echo -n "$line" | cut -d" " -f1)"
             break
         fi

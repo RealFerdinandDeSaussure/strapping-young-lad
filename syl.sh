@@ -94,7 +94,7 @@ get_config_var() {
     config_vars["$1"]="${!env}"
     test -n "${config_vars["$1"]}" && return
 
-    getter="get_config_var_${1,,}"
+    getter="get_config_var_${1@L}"
     if declare -F "$getter" >/dev/null; then
         $getter
         test -n "${config_vars["$1"]}" && return
@@ -319,7 +319,7 @@ get_missing_pkgs() {
 
 bootstrap() {
     local kernel choice
-    declare -a pkgs no_pkgs
+    declare -a pkgs no_pkgs extra_pkgs
     test_system_mounted || exit 1
 
     while true; do
@@ -331,14 +331,15 @@ bootstrap() {
         msg "Kernel package '$kernel' not found."
     done
 
-    IFS=' ' read -ra pkgs < <(prompt_for_extra_pkgs)
+    read -ra pkgs < <(prompt_for_extra_pkgs)
 
     explain common_packages
     while true; do
         read -rp "  Please enter additional packages separated by spaces here (default: none): " choice
-        IFS=' ' read -ra no_pkgs < <(get_missing_pkgs "$choice")
+        read -ra no_pkgs < <(get_missing_pkgs "$choice")
         if [ "${#no_pkgs[@]}" -eq 0 ]; then
-            pkgs+=("$choice")
+            read -ra extra-pkgs <<< "$choice"
+            pkgs+=("${extra_pkgs[@]}")
             break
         else
             msg "The following packages could not be found:"
@@ -451,7 +452,7 @@ test_system_mounted() {
     fi
 
     for i in "${mntpoints[@]}"; do
-        IFS=$'\t' read -ra arr <<< "$i"
+        read -r -d $'\t' -a arr <<< "$i"
         lsblk -nQ "PARTTYPE == \"${arr[1]}\" && MOUNTPOINT == \"${arr[3]}\"" >/dev/null && continue
         msg "${arr[0]} partition ${arr[2]} not mounted at ${arr[3]}. Mount it before continuing."
         err=1

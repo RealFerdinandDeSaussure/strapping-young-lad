@@ -280,11 +280,11 @@ create_swap_zram() {
 prepare_system() {
     test_system_mounted || exit 1
 
-    echo "First, let's setup swap and zram."
+    msg "First, let's setup swap and zram."
     explain swap_zram
     ask_y_n "Would you like to continue?" continue skip && create_swap_zram
 
-    echo "With all partitions mounted and a swap file created, we can generate the file
+    msg "With all partitions mounted and a swap file created, we can generate the file
 system table."
     if ask_y_n "Would you like to continue?" continue skip; then
         genfstab -U /mnt >> /mnt/etc/fstab || exit 1

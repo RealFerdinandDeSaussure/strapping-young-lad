@@ -1,6 +1,8 @@
-That concludes the Secure Boot setup. You should now reboot the system and run
-./syl.sh 10 to execute the current step again. When asked, do not choose to
-skip it!
+That concludes the Secure Boot setup. In future, systemd will be used to sign
+files for Scure Boot. If you would like, you can now remove the sbsigntools
+package.
 
-If everything went as expected, the script will let you know that Secure Boot
-is already active. You will then be taken to the next step.
+You should now reboot the system and run ./syl.sh 10 to execute the current step
+again. When asked, do not choose to skip it! If everything went as expected, the
+script will let you know that Secure Boot is already active. You will then be
+taken to the next step.

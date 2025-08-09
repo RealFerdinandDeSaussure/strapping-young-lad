@@ -7,8 +7,8 @@ set up. These include:
     - network interfaces
     - a root password
 
-You will be prompted for customization options throughout the process. This is
-a rather involved step and to make it possible to jump in and out in-between,
-you will be offered to skip each part before it is run. Be careful however, as
-skipping a section entirely will result in an incomplete and possibly
-non-functional system.
+You will be prompted for customization options throughout the process. This is a
+rather involved step so it is designed in a more modular way: You will be
+offered to skip each part before it is run. Be careful however, as skipping a
+section entirely will result in an incomplete and possibly non-functional
+system.

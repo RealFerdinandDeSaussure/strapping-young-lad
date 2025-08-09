@@ -12,8 +12,9 @@ Afterwards, the following subvolumes will be created:
     - @snp: a subvolume to hold snapshots of other subvolumes, to be mounted at
         /snp
 
-On @, we will create additional subvolumes. This only servers the purpose of
-excluding these paths from future btrfs snapshots of their parent subvolume:
+On @, we will create additional subvolumes. This only serves the purpose of
+excluding these paths from future btrfs snapshots of their parent subvolume.
+This will concern the following paths:
     - /swap: subvolume to hold a swap file
     - /var/var: this and the following subvolumes are for folders considered
         not relevant for backups

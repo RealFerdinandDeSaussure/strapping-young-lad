@@ -4,4 +4,5 @@ system consists of three packages: base, linux and linux-firmware.
 
 However, we will extend the base install with some packages that will be useful
 later on. If you wish, you may switch out linux with a different kernel package.
-You may also specify additional packages, you want to install on your system.
+Additional packages you would like to install to the system can also be
+specified.
