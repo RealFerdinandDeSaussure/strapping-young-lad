@@ -587,6 +587,7 @@ new system."
 
     for s in $(seq "$STEP" "$STEPS"); do
         step "$s"
+        pause
         clear
     done
 fi

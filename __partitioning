@@ -52,26 +52,38 @@ maybe_create_xbootldr_p() {
             msg "XBOOTLDR system partition formatted."
         fi
 }
+
 get_p_parent() {
     lsblk -rnpo PKNAME "$1" | head -n1
 }
 
 setup_parts() {
-    local disk disk_head
-    while true; do
-        read -rp "  Please provide a path to the disk you would like to use: " disk
-        if [ ! -b "$disk" ]; then
-            msg "$disk is not a block device"
-        elif [ ! "$(dirname "$disk")" = "/dev" ]; then
-            msg "Disk path needs to reside in /dev."
-        else
-            break
-        fi
-    done
+    local choice disk_head
+    declare -a disks 
 
-    config_vars[INSTALL_DISK]="$disk"
-    disk_head="$(udevadm info --query=property "$disk"| awk -F= '{if ($1=="ID_PART_TABLE_TYPE") {print $2}}')" || exit 1
-    msg -n "Is there an existing GUID partition table on $disk? "
+    while read -r line; do disks+=("$line"); done < <(lsblk -dno PATH,TYPE | awk '{if ($2 == "disk") print $1}')
+
+    case ${#disks[@]} in
+        1)
+            choice="${disks[0]}"
+            msg "Continuing with ${choice} as it is the only writable disk available..."
+            pause
+            ;;
+        0)
+            msg "No writable disks found. Unable to continue."
+            exit 1
+            ;;
+        *)
+            msg "On which disk would you like to install Arch Linux?"
+            tab_display "${disks[@]}"
+            choice="$(select_item "${disks[@]}")"
+            ;;
+    esac
+    config_vars[INSTALL_DISK]="$choice"
+
+    disk_head="$(udevadm info --query=property "$choice"| awk -F= '{if ($1=="ID_PART_TABLE_TYPE") {print $2}}')" || exit 1
+    msg -n "Is there an existing GUID partition table on $choice? "
+
     case "$disk_head" in
         gpt)
             msg_bold "Yes."
@@ -84,11 +96,11 @@ setup_parts() {
         "")
             msg_bold "No."
             if ask_y_n "Would you like to create one?"; then
-                if ! parted "$disk" mklabel gpt >/dev/null 2>&1; then
+                if ! parted "$choice" mklabel gpt >/dev/null 2>&1; then
                     msg "There was an error creating the GPT."
                     exit 1
                 else
-                    msg "Created GPT on $disk."
+                    msg "Created GPT on $choice."
                 fi
             else
                 msg "Can't continue without GPT written to disk."
@@ -97,12 +109,12 @@ setup_parts() {
         ;;
     esac
 
-    if [ -n "$(findmnt -Q 'SOURCE =~ "'"${disk}"'.+"')" ]; then
-        msg "Partitions on $disk are currently mounted. Unmount them before proceeding."
+    if [ -n "$(findmnt -Q 'SOURCE =~ "'"${choice}"'.+"')" ]; then
+        msg "Partitions on $choice are currently mounted. Unmount them before proceeding."
         exit 1
     fi
 
-    create_parts "$disk"
+    create_parts "$choice"
 }
 
 encrypt_parts() {
