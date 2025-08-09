@@ -287,11 +287,9 @@ prepare_system() {
     msg "With all partitions mounted and a swap file created, we can generate the file
 system table."
     if ask_y_n "Would you like to continue?" continue skip; then
+        msg "Editing /etc/fstab..."
         genfstab -U /mnt >> /mnt/etc/fstab || exit 1
-        msg "The fstab file was successfully created. However, it is recommended to check it
-manually for errors.
-For this, we will open it using \$EDITOR."
-        pause
+        explain_and_confirm fstab || pause
         edit_file /mnt/etc/fstab
     fi
 

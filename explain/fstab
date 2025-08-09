@@ -1,0 +1,26 @@
+The fstab (file system table) file contains information about which file systems
+to mount at which path at boot. It essentially works like the mount command and
+takes similar parameters.
+
+Depending on the number and types of file systems in use, the syntax be a bit
+complex and difficult to read. Furthermore the amount of available options makes
+a full explanation of the layout unpractical. Arch Linux includes the genfstab
+script which generates an fstab file for the new system based on the mounted
+file systems at the time of its execution. If all partitions and subvolumes are
+properly mounted, no further modifications of the fstab file should be
+necessary.
+
+We will open the fstab file next so you can check if genfstab generated the file
+correctly. As it is usually quite reliable, you do not need to worry if you do
+not understand each option set. For a general understanding, see the individual
+columns below. Each row represents a block device whose file system will be
+mounted at boot.
+    - 1. file system: identifier for the file system to be mounted; can be
+        prepended by UUID= or LABEL= for alternatives to direct paths
+    - 2. dir: path to the mount point of the volume
+    - 3. type: the type of file system used by the volume
+    - 4. options: mount options; mount uses the -o flag for setting these
+    - 5. dump: whether dump (a backup utility not overly popular anymore) should
+        consider this file system for backups
+    - 6. pass: when a file system check is conducted by fsck at boot, this
+        column determines the order in which the file systems are checked
