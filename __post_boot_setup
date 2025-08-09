@@ -317,9 +317,9 @@ enroll_tpm() {
 
     header="PCRSignature:initrd"
     grep -q "[${header}]" "$uki_conf" || echo -e "[${header}]\n" >> "$uki_conf"
-    add_to_conf "$conf" "PCRPrivateKey=${priv_key}" "$header"
-    add_to_conf "$conf" "PCRPublicKey=${pub_key}" "$header"
-    add_to_conf "$conf" "Phases=enter-initrd" "$header"
+    add_to_conf "$uki_conf" "PCRPrivateKey=${priv_key}" "$header"
+    add_to_conf "$uki_conf" "PCRPublicKey=${pub_key}" "$header"
+    add_to_conf "$uki_conf" "Phases=enter-initrd" "$header"
 
     explain_and_confirm pcr_conf
     edit_file "$uki_conf"
@@ -387,7 +387,7 @@ clear_secrets() {
     if ! grep -q "recovery" <<< "${secrets[*]}"; then
         explain recovery "$recovery"
         if ask_y_n "Would you like to enroll recovery keys?"; then
-            systemd-cryptenroll --recovery-key "$part" 2>/dev/null | tee "$recovery"
+            systemd-cryptenroll --recovery-key "$part" 2>/dev/null | tee "$recovery" || exit 1
             msg "The recovery key shown above was enrolled and written to ${recovery}."
             msg_bold "Store it safely offline outside of the encrypted partition and delete
 ${recovery}!"
