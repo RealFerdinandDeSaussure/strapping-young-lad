@@ -11,7 +11,7 @@ The value 0 means the largest continuously empty block on the disk (most of the
 time, this is equivalent to the remaining empty space).
 
 After creating each partition, we will set its partition type. This lets the
-system know the function of the partition, and is one of the requirements for
-mounting them automatically at boot.
+system know the purpose of the partition, and is one of the requirements for
+mounting it automatically at boot.
 
 Now let's get started.
