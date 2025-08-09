@@ -119,7 +119,7 @@ get_safe_filename() {
 
 msg_bold() {
     declare -a args
-    while (( $# )); do
+    while [ $# -gt 1 ]; do
         args+=("$1")
         shift
     done
@@ -128,7 +128,7 @@ msg_bold() {
 
 msg() {
     declare -a args
-    while (( $# )); do
+    while [ $# -gt 1 ]; do
         args+=("$1")
         shift
     done
