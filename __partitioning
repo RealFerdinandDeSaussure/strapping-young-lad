@@ -86,7 +86,7 @@ setup_parts() {
         ;;
     esac
 
-    if [ -n "$(findmnt -Q 'SOURCE =~ "'"${disk}"'[0-9]+"')" ]; then
+    if [ -n "$(findmnt -Q 'SOURCE =~ "'"${disk}"'.+"')" ]; then
         msg "Partitions on $disk are currently mounted. Unmount them before proceeding."
         exit 1
     fi

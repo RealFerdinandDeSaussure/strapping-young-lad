@@ -425,13 +425,13 @@ test_system_mounted() {
     root="/dev/mapper/${config_vars[ROOT_ENCRYPTED_NAME]}"
     get_config_var EFI_PARTITION
     efi="${config_vars[EFI_PARTITION]}"
-    root_query="SOURCE =~ \"$root\" && TARGET == \"/mnt\""
-    efi_query="SOURCE == \"$efi\" && TARGET == \"/mnt/boot\""
+    root_query="PARTTYPE == \"${PART_TYPES[root]}\" && MOUNTPOINT == \"/mnt\""
+    efi_query="PARTTYPE == \"$${PART_TYPES[efi]}\" && MOUNTPOINT == \"/mnt/boot\""
 
-    if [ -z "$(findmnt -Q "$root_query")" ]; then
+    if [ -z "$(lsblk -nQ "$root_query")" ]; then
         msg "root partition $root is not mounted at /mnt. Mount it before continuing."
         return 1
-    elif [ -z "$(findmnt -Q "$efi_query")" ]; then
+    elif [ -z "$(lsblk -nQ "$efi_query")" ]; then
         msg "EFI system partition $efi not mounted at /mnt/boot. Mount it before continuing."
         return 1
     else
