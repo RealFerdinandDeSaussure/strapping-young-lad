@@ -1,8 +1,8 @@
-Welcome to your new ArchLinux system! If you are not on the newly installed
+Welcome to your new Arch Linux system! If you are not on the newly installed
 system (you should have received a warning if that is the case), shut off the
 computer, disconnect any boot media and turn on the computer again.
 
-Otherweise, we can now make additional steps toward a more fully fleshed out
+Otherwise, we can now make additional steps toward a more fully fleshed out
 setup. The first couple of these will deal with security. We will install ufw,
-a simple firewall, and set up a very basic ruleset for it. Afterwards, we can
+a simple firewall, and set up a very basic rule set for it. Afterwards, we can
 get onto the much more daunting  task of installing Secure Boot.

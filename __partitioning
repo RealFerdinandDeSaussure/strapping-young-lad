@@ -237,7 +237,7 @@ create_p() {
 
 test_p() {
     if [ ! -b "$1" ]; then
-        msg "Oh no, something wrent something no partition exists at $1."
+        msg "No block device at $1. Something went very wrong."
         return 1
     else
         return 0

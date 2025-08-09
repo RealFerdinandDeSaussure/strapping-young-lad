@@ -2,7 +2,7 @@ A common way to enroll the TPM, is to bind to one of its PCR banks. These banks
 store encrypted system information of various kind, most notably the Secure
 Boot status in PCR7. The TPM will compare current values against the ones in
 the PCR banks and only unlock a secret when these values match. However, values
-can regulary change due to actions that may not be related to security issues
+can regularly change due to actions that may not be related to security issues
 at all - especially in a dual boot environment.
 
 For that reason, instead of binding directly to PCR banks, we will bind to a

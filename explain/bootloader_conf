@@ -1,14 +1,13 @@
-The bootloader was installed succesfully. systemd-boot will automatically
-generate entries for Windows, macOS (I hope I got that name right) and all .efi
-files in /boot/EFI/Linux. You can customize the bootloader config further, if
-you would like. Here is an overview of the settings we added to bootloader
-config and their current value:
+The boot loader was installed successfully. systemd-boot will automatically
+generate entries for Windows, macOS and all .efi files in /boot/EFI/Linux. You
+can customize the boot loader config further, if you would like. Here is an
+overview of the settings we added to boot loader config and their current value:
     - default: the default entry (supporting wild cards) that will be booted if
         there is no user input at boot; set to a value determined by the script
-        or to nothing if it was unsuccesful in finding a UKI to be booted
+        or to nothing if it was unsuccessful in finding a UKI to be booted
     - timeout: how long the boot menu will be shown; set to menu-hidden, which
-        will not display the menu unless the spacebar is held down at boot
-    - editor: whether or not to allow editing the kernel commandline from the
+        will not display the menu unless the space bar is held down at boot
+    - editor: whether or not to allow editing the kernel command line from the
         boot menu; disabled for security
     - console-mode: resolution of the boot menu; set to max, the highest
         possible resolution

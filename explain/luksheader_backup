@@ -1,11 +1,11 @@
 The LUKS header is the part of an encrypted volume that holds all information
 regarding encryption. This includes information about what secrets have been
 enrolled and can be used for unlocking. It is a tiny portion of the partition
-that, if corrupted, will render the entire filesystem unusable and all data on
+that, if corrupted, will render the entire file system unusable and all data on
 it lost. For this reason, it is advisable to create a backup of the header and
 put it in a safe location. Should the original header get corrupted, you can
 restore this header with the following command:
-cryptsetup luksHeaderRestore  --header-backup-file=<header-backup> <LUKS-partition>
+cryptsetup luksHeaderRestore --header-backup-file=<backup-file> <LUKS-partition>
 
 Creating a backup of the LUKS header or restoring the backup does not alter the
 volumes encryption setup (before corruption) in any way. After restoring the

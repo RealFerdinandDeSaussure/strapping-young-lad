@@ -3,4 +3,5 @@ that can be set up in addition. These include:
     - Multicast/MulticastDNS support
     - making systemd wait for a routable IP address%1
 
-If you do not know what one or any of these options mean, it is safe to just reply yes below (no too).
+If you do not know what one or any of these options mean, it is safe to just
+reply yes below (no too).

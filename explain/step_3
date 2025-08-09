@@ -5,7 +5,7 @@ benefits of a multi partition layout.
 Additionally, this allows us to make use of btrfs's snapshot feature to backup
 subvolumes.
 
-First, we will create a btrfs filesystem on root.
+First, we will create a btrfs file system on root.
 Afterwards, the following subvolumes will be created:
     - @: the root file system, to be mounted at /
     - @home: the home "partition", to be mounted at /home
@@ -14,7 +14,7 @@ Afterwards, the following subvolumes will be created:
 
 On @, we will create additional subvolumes. This only servers the purpose of
 excluding these paths from future btrfs snapshots of their parent subvolume:
-    - /swap: subvolume to hold a swapfile
+    - /swap: subvolume to hold a swap file
     - /var/var: this and the following subvolumes are for folders considered
         not relevant for backups
     - /var/cache

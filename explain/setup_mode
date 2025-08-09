@@ -1,3 +1,7 @@
+To make changes to the Secure Boot UEFI variables, the system needs to be in
+Secure Boot setup mode. In this mode, Secure Boot itself is disabled and the
+variable holding the Platform Key has been wiped.
+
 To activate setup mode, you need to enter your motherboard's firmware
 (sometimes called BIOS) and delete the Platform Key.
 Look for options similar to:

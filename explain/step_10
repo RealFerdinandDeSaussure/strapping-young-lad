@@ -1,5 +1,5 @@
-Secure Boot provides a way to prevent unnoticed tampering with the bootchain.
-Using Secure Boot requires signing different parts of the bootchain and
+Secure Boot provides a way to prevent unnoticed tampering with the boot chain.
+Using Secure Boot requires signing different parts of the boot chain and
 verifying their signature before execution.
 
 Device firmware can also be factory-signed and make use of Secure Boot for

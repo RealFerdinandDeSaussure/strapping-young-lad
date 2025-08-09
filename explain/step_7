@@ -1,6 +1,6 @@
 Yes, what it says in the headline. We will:
     - create one or multiple unified kernel image(s) (UKI)
-    - install a bootloader (sytemd-boot)
+    - install a boot loader (systemd-boot)
 
 This is one of the most critical steps of the installation process as errors
 may result in an unbootable system.

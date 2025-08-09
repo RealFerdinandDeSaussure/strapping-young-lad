@@ -1,11 +1,11 @@
-Neither the bootloader nor the UKIs will remain unchanged over time. Updates to
-systemd-boot or the kernel will result in either UKIs or the bootloader binary
+Neither the boot loader nor the UKIs will remain unchanged over time. Updates to
+systemd-boot or the kernel will result in either UKIs or the boot loader binary
 being overwritten. Every time this happens, these files need to be resigned. To
 ensure this happens automatically, we will create a hook for pacman that will
-sign the bootloader binaries every time they are updated. For the kernel, we
+sign the boot loader binaries every time they are updated. For the kernel, we
 will edit uki.conf to make signing the UKI files part of their build process.
 
-After these steps have completed succesfully, we will simulate an update to the
-bootloader to trigger the signing process. We could simply sign all the files
+After these steps have completed successfully, we will simulate an update to the
+boot loader to trigger the signing process. We could simply sign all the files
 directly but this way ensures that our setup was complete and will continue to
 work in the future.

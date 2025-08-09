@@ -2,7 +2,7 @@ First, we will create one or more unified kernel image(s) (UKI).
 
 Normally, the boot loader will execute what is called an EFI boot stub, this is
 a kernel image packaged as a UEFI executable. Arguments can be passed to the
-kernel via the commandline, which can be set either directly in the bootloader
+kernel via the commandline, which can be set either directly in the boot loader
 or in its on-disk configuration. The EFI stub will load an initial RAM file
 system (initramfs, also called initial RAM disk, initrd) into memory. The
 initramfs contains the necessary drivers and programs to bootstrap the system.
@@ -17,6 +17,6 @@ mkinitcpio and write our kernel commandline to a designated file. This script
 should take care of most of the work but each config file will be opened with a
 text editor ($EDITOR) so you can make custom adjustments.
 
-One thing to note is that we will be using a systemd based initramfs. ArchLinux
+One thing to note is that we will be using a systemd based initramfs. Arch Linux
 by default uses busybox but using systemd gives us access to a couple of handy
 extensions during the boot process.

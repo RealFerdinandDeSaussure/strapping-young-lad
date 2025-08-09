@@ -1,10 +1,10 @@
-To trigger the signing of all UKIs and the bootloader binary, we will run the
+To trigger the signing of all UKIs and the boot loader binary, we will run the
 following commands:
 pacman -S systemd
 bootctl update
 
 Re-installing systemd will trigger a pacman hook, which in turn will trigger
-signing of the bootloader binaries. A default pacman hook will also trigger,
+signing of the boot loader binaries. A default pacman hook will also trigger,
 causing the UKIs to be rebuilt. During this process, systemd-ukify will take
 care of signing the generated UKIs. "bootctl update" will copy the updated
-(signed) bootloader EFI binaries to the EFI system partition.
+(signed) boot loader EFI binaries to the EFI system partition.

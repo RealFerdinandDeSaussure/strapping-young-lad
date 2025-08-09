@@ -1,4 +1,4 @@
-The keys used for Secure Boot are stored in EFI variables that are accesible to
+The keys used for Secure Boot are stored in EFI variables that are accessible to
 the firmware. Before we start enrolling new keys, we will backup the existing
-ones to %1. After the new keys have been succesfully enrolled, you can safely
+ones to %1. After the new keys have been successfully enrolled, you can safely
 remove these backups.

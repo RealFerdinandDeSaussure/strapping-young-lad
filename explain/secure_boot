@@ -1,5 +1,5 @@
-Okay then, let's set up Secure Boot. Thankfully, you can use this script and do not
-have to go through this ordeal on your own.
+Okay then, let's set up Secure Boot. Thankfully, you can use this script and do
+not have to go through this ordeal on your own.
 
 Before we start, we will install the following packages that will help us
 through the process:
