@@ -41,6 +41,9 @@ backup_sb_efivars() {
     bckp_folder="$(get_safe_filename "$HOME/sb-keys.backup-$(date +%s)")"
     mkdir -p "$bckp_folder"
 
+    explain_and_confirm secure_boot
+    pacman -Sy --needed efitools sbsigntools systemd-ukify || exit 1
+
     msg "Backing up Secure Boot efivars..."
     explain_and_confirm backup_efivars "${bckp_folder}"
 
@@ -117,6 +120,7 @@ create_ms_db() {
 
     explain_and_confirm ms_keys
     for u in "${urls[@]}"; do
+        msg "Downloading from $u..."
         download_from_ms "$u"
     done
     msg "Creating signature lists..."
@@ -166,7 +170,7 @@ enroll_keys() {
         chattr -i "$k"
     done
     sbkeysync --keystore "$sbsign_dir" || signing_fail
-    msg "Key Exchange Keys enrolled."
+    msg "Key Exchange Keys and Database enrolled."
     efi-updatevar -f "${sbsign_dir}/PK/PK.auth" PK || signing_fail
     msg "Platform Key enrolled."
 
@@ -188,7 +192,7 @@ Target = usr/lib/systemd/boot/efi/systemd-boot*.efi
 [Action]
 Description = Signing systemd-boot for Secure Boot...
 When = PostTransaction
-Exec = /bin/sh -c '\''while read -r f; do /usr/lib/systemd/systemd-sbsign --private-key /root/sb-keys/db.key --certificate /root/sb-keys/db.crt --output "${f}.signed" "$f" >/dev/null ; done;'\''
+Exec = /bin/sh -c '\''while read -r f; do /usr/lib/systemd/systemd-sbsign sign --private-key /root/sb-keys/db.key --certificate /root/sb-keys/db.crt --output "${f}.signed" "$f" >/dev/null ; done;'\''
 Depends = sh
 NeedsTargets' > "${hook_dir}/80-secureboot.hook"
 }
@@ -215,7 +219,7 @@ sign_bootloader_ukis() {
 
     explain_and_confirm signing_hooks
     pacman -S systemd || exit 1
-    bootctl install || exit 1
+    bootctl install --no-variables || exit 1
 }
 
 setup_sboot() {
@@ -224,12 +228,10 @@ setup_sboot() {
     ms_tmp_dir="$(mktemp -d)"
     sb_mode="$(get_sb_mode)"
 
-    backup_sb_efivars
 
     case "$sb_mode" in
         "on")
             msg "Secure Boot is already set up. There is nothing to do."
-            pause "Press any key to continue with the next step."
             return
             ;;
         "setup")
@@ -249,10 +251,6 @@ This should never happen. Check your firmware's Secure Boot implementation."
             ;;
     esac
 
-    explain_and_confirm secure_boot
-
-    pacman -Sy --needed efitools sbsigntools systemd-ukify || exit 1
-
     create_sb_keyset "$sb_tmp_dir"
     store_sb_keyset
 
@@ -269,6 +267,7 @@ This should never happen. Check your firmware's Secure Boot implementation."
 }
 
 setup_firewall() {
+    msg "Installing ufw..."
     pacman -Sy --needed ufw || exit 1
 
     explain_and_confirm ufw

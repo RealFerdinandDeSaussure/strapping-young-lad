@@ -1,8 +1,8 @@
-Now, we will edit the mkinitcpio preset file(s). Each preset file corresponds
-to an installed kernel, allowing configuration on a per-kernel based. Further
+Now, we will edit the mkinitcpio preset file(s). Each preset file corresponds to
+an installed kernel, allowing configuration on a per-kernel based. Further
 "sub-presets" may be specified in the file. By default, this only includes
-"default" and "fallback". Configuration for both these presets is done in the
-same file.
+"default" and "fallback". Configuration for both these "sub-presets" is done in
+a single preset file.
 
 You can set the path to the generated image file (*_image=) as well as the path
 to the final UKI (*_uki=) in the preset file. The *_options variable also

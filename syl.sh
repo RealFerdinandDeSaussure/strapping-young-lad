@@ -338,7 +338,7 @@ bootstrap() {
         read -rp "  Please enter additional packages separated by spaces here (default: none): " choice
         read -ra no_pkgs < <(get_missing_pkgs "$choice")
         if [ "${#no_pkgs[@]}" -eq 0 ]; then
-            read -ra extra-pkgs <<< "$choice"
+            read -ra extra_pkgs <<< "$choice"
             pkgs+=("${extra_pkgs[@]}")
             break
         else

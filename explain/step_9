@@ -5,4 +5,4 @@ computer, disconnect any boot media and turn on the computer again.
 Otherwise, we can now make additional steps toward a more fully fleshed out
 setup. The first couple of these will deal with security. We will install ufw,
 a simple firewall, and set up a very basic rule set for it. Afterwards, we can
-get onto the much more daunting  task of installing Secure Boot.
+get onto the much more daunting task of installing Secure Boot.

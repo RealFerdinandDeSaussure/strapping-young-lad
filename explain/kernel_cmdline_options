@@ -1,7 +1,7 @@
-The options that can be passed to the kernel via the commandline are much to
+The options that can be passed to the kernel via the commandline are much too
 numerous to be listed here. However, here is an overview of the options we
 wrote to the cmdline file:%1
-    - rootflags: options for mounting the root partition - a btrfs subvolume
-        may be specified here
+    - rootflags: options for mounting the root partition - the btrfs subvolume
+          is specified here
     - quiet: suppress output when booting
     - bgrt_disable: suppress display of the OEM logo

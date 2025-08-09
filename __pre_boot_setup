@@ -39,7 +39,8 @@ set_locales() {
     declare -a items locales
 
     sed -ri 's/^#(en_US.UTF-8 UTF-8)/\1/' /mnt/etc/locale.gen
-    msg "Choose any locale you wish to include on your system. 'en_US UTF-8' is always included.
+    msg "Choose any locale you wish to include on your system.
+'en_US UTF-8' is always included.
 Only UTF-8 locales are supported by this script."
 
     while read -r line; do
@@ -300,9 +301,9 @@ set to UTC for this to work correctly."
     msg "Now, locale settings."
     ask_y_n "Would you like to continue?" continue skip && set_locales
 
-    msg "If you are using a keyboard layout other than the default US one, you can set
-it as default for the virtual console. This will most likely not affect the
-keyboard settings in a desktop environment."
+    msg "If you are using a keyboard layout other than the default US one, you can set it
+as your default for the virtual console. This will most likely not affect the
+keyboard settings in your desktop environment."
     ask_y_n "Would you like to specify a custom keyboard layout?" && set_vcons_kl
 
     msg "Select a hostname next. In line with RFC 1178, a hostname should only include
@@ -413,7 +414,10 @@ create_crypttab_initramfs() {
     if [ "${config_vars[GPT_AUTOMOUNT]}" = 1 ]; then
         explain crypttab.initramfs "
 
-As you have set up automounting, you do not need to create this file. After setting up hardware tokens to unlock the encrypted root volume, we will come back to crypttab.initramfs as it is needed to specify the unlock method at boot. If you would like, we can still create an crypttab.initramfs file now."
+As you have set up automounting, you do not need to create this file. After
+setting up hardware tokens to unlock the encrypted root volume, we will come
+back to crypttab.initramfs as it is needed to specify the unlock method at boot.
+If you would like, we can still create an crypttab.initramfs file now."
     ask_y_n "Would you like to create and edit crypttab.initramfs now?" || return
     else
         msg "Editing crypttab.initramfs..."
@@ -436,7 +440,7 @@ setup_mkinitcpio() {
     mkcp_conf="$(mktemp)"
     
     msg "Editing mkinitcpio.conf..."
-    explain_and_confirm mkinitcpio.conf || pause
+    explain mkinitcpio.conf
     cp /mnt/etc/mkinitcpio.conf "$mkcp_conf"
 
     source <(grep "^BINARIES" "$mkcp_conf")

@@ -1,16 +1,18 @@
 First, we will create one or more unified kernel image(s) (UKI).
 
-Normally, the boot loader will execute what is called an EFI boot stub, this is
-a kernel image packaged as a UEFI executable. Arguments can be passed to the
-kernel via the commandline, which can be set either directly in the boot loader
-or in its on-disk configuration. The EFI stub will load an initial RAM file
-system (initramfs, also called initial RAM disk, initrd) into memory. The
-initramfs contains the necessary drivers and programs to bootstrap the system.
+Typically, the boot loader will execute what is called an EFI boot stub to start
+Linux. This is a kernel image packaged as a UEFI executable. Arguments can be
+passed to the kernel via the commandline, which can be set either directly in
+the boot loader or in its on-disk configuration. The EFI stub then loads an
+environment containing all the necessary programs, drivers and configuration
+files required to bootstrap the system. This environment is referred to either
+as an initial RAM file system (initramfs) or an initial RAM disk (initrd). Both
+terms are often used interchangeably or with subtle differentiation.
 
-A unified kernel image packages the kernel, initramfs and commandline
-parameters into a single EFI executable. This makes the process more manageable
-and also allows usage of features like Secure Boot as it reduces the number of
-files involved in the early boot stage dramatically.
+A unified kernel image packages the kernel, initramfs and commandline parameters
+into a single EFI executable. This makes the boot process more manageable and
+also allows usage of features like Secure Boot as it reduces the number of files
+involved in the early boot stage dramatically.
 
 To create a UKI, we will adapt the configuration and preset files for
 mkinitcpio and write our kernel commandline to a designated file. This script

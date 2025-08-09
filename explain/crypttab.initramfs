@@ -10,6 +10,6 @@ volume and consists of four fields:
     - volume-name: the name of the mapping the unlocked volume will take
     - encrypted device: the path to the encrypted volume or its device UUID if
         starting with "UUID="
-    - key-file: the path to the key-file, can be "none" or "-" if unlocked via
+    - key-file: the path to the key-file; can be "none" or "-" if unlocked via
         password entry or a method specified in the next field
     - options: options for unlocking the volume, separated by comma%1

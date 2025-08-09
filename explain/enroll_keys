@@ -1,2 +1,2 @@
-All keys are now located at %1. We will use sbkeysync to enroll them each into
-their respective UEFI variable.
+All keys are now located at %1. We will use sbkeysync to enroll each into its
+respective UEFI variable.

@@ -1,5 +1,6 @@
 All keys have been enrolled. At this point, all UEFI binaries signed with
 Microsoft's keys should be bootable. On next boot, Secure Boot will be enabled
 and in user mode. This also means that unsigned UEFI binaries such as
-systemd-boot and our UKIs will no longer boot. Therefore, we will sign with our
-custom keys next.
+systemd-boot and our UKIs will no longer boot.
+
+Therefore, our next step will be to sign them with the key we just created.
