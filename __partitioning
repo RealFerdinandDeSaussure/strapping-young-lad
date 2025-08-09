@@ -202,13 +202,30 @@ get_p_by_type() {
     echo -n "$part"
 }
 
+get_diff_p() {
+    declare -a before after
+    while (( $# )); do
+        test -z "$1" && { shift; break; }
+        before+=("$1")
+        shift
+    done
+    after=("$@")
+
+    for p in "${after[@]}"; do
+        if ! printf '%s\n' "${before[@]}" | grep -Fxq -- "$p"; then
+            echo -n "$p"
+            break
+        fi
+    done
+}
+
 create_p() {
-    local disk type default size part part_num start_sec end_sec
+    local disk type default size part start_sec end_sec part
+    declare -a guid
+    declare -A parts
     disk=$1
     type=$2
     default=$3
-
-    declare -a guid
 
     get_config_var INSTALL_DISK
     while true; do
@@ -223,16 +240,20 @@ create_p() {
         fi
     done
 
-    part_num="$(get_lowest_part_num "$disk")"
+    while read -r line; do before+=("$line"); done < <(lsblk -prno NAME "$disk")
+
     start_sec="$(sgdisk -F "$disk")" || exit 1
     end_sec=$(("$start_sec" + "$size"))
-    test -n "$4" && guid=("-t" "$part_num:$4")
-    sgdisk -n "$part_num":"$start_sec":"$end_sec" "$disk" "${guid[@]}" || exit 1
+    test -n "$4" && guid=("-t" "0:$4")
+    sgdisk -n 0:"$start_sec":"$end_sec" "$disk" "${guid[@]}" || exit 1
     echo "$type partition created."
 
-    part="$disk$part_num"
+    while read -r line; do after+=("$line"); done < <(lsblk -prno NAME "$disk")
+
+    # remember that an empty string must be passed between before and after!
+    part="$(get_diff_p "${before[@]}" "" "${after[@]}")"
     test_p "$part" || exit 1
-    config_vars["$(echo -n "${type}_PARTITION" | tr "[:lower:]" "[:upper:]")"]="$part"
+    config_vars["${type@U}_PARTITION"]="$part"
 }
 
 test_p() {
