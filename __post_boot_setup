@@ -309,8 +309,13 @@ enroll_tpm() {
     explain_and_confirm tpm_pcr
     priv_key=/etc/systemd/tpm2-pcr-private-key.pem
     pub_key=/etc/systemd/tpm2-pcr-public-key.pem
-    msg "Generating PCR keys..."
-    ukify genkey --pcr-private-key="$priv_key" --pcr-public-key="$pub_key" || exit 1
+
+    if [ -f "$priv_key" ] && [ -f "$pub_key" ]; then
+        msg "PCR keys already exist. Continuing with existing keys..."
+    else
+        msg "Generating PCR keys..."
+        ukify genkey --pcr-private-key="$priv_key" --pcr-public-key="$pub_key" || exit 1
+    fi
 
     msg "Editing ${uki_conf}..."
 
@@ -325,7 +330,7 @@ enroll_tpm() {
 
     msg "Rebuilding UKI(s)..."
     mkinitcpio -P || exit 1
-    msg "Enroll TPM2 policy"
+    msg "Enrolling TPM2 policy..."
     systemd-cryptenroll --wipe-slot tmp2 --tpm2-device "$device" --tpm2-pcrs="" "$part" || exit 1
 }
 
