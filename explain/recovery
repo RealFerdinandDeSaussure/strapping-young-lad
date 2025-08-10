@@ -1,6 +1,7 @@
 As mentioned earlier, you now have the option to enroll recovery keys. We will
-store them in a text file at %1. As that file resides on the encrypted device
-itself, it is entirely useless for recovery purposes. You should therefore copy
-it to a safe location, preferably an external offline storage medium.
+store them in a text file at %1.
+As that file resides on the encrypted device itself, it is entirely useless for
+recovery purposes. You should therefore copy it to a safe location, preferably
+an external offline storage medium.
 
 Afterwards, it is recommended to delete %1.
