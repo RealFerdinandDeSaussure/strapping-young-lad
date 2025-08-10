@@ -4,11 +4,12 @@
 MS_GUID="77fa9abd-0359-4d32-bd60-28f4e78f784b"
 
 add_to_conf() {
-    local conf line header
+    local conf line header opt
     conf="$1"
     line="${2//\//\\/}"
     header="${3//\//\\/}"
-    grep -q "$(printf "%s" "$line" | cut -d= -f1)" "$conf" && return
+    read -r -d= opt <<< "$line"
+    grep -q "^\s*${opt}=" "$conf" && return
     sed -i 's/\(\['"$header"'\]\)/\1\n'"$line"'/' "$conf"
 }
 
@@ -202,7 +203,7 @@ set_sb_signing_in_uki_conf() {
     conf=/etc/kernel/uki.conf
     touch "$conf" || exit 1
 
-    grep -q "[UKI]" "$conf" || echo -e "[UKI]\n" >> "$conf"
+    grep -qF "[UKI]" "$conf" || echo -e "[UKI]\n" >> "$conf"
     add_to_conf "$conf" "SecureBootCertificate=/root/sb-keys/db.crt" UKI
     add_to_conf "$conf" "SecureBootPrivateKey=/root/sb-keys/db.key" UKI
     add_to_conf "$conf" "SecureBootSigningTool=systemd-sbsign" UKI
@@ -320,7 +321,7 @@ enroll_tpm() {
     msg "Editing ${uki_conf}..."
 
     header="PCRSignature:initrd"
-    grep -q "[${header}]" "$uki_conf" || echo -e "[${header}]\n" >> "$uki_conf"
+    grep -Fq "[${header}]" "$uki_conf" || echo -e "\n[${header}]" >> "$uki_conf"
     add_to_conf "$uki_conf" "PCRPrivateKey=${priv_key}" "$header"
     add_to_conf "$uki_conf" "PCRPublicKey=${pub_key}" "$header"
     add_to_conf "$uki_conf" "Phases=enter-initrd" "$header"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPTDIR="$(dirname "$(readlink -f "$0")")"
+SCRIPTDIR="$(dirname "$(readlink -f -- "$0")")"
 STEPS=11
 STEP=$1
 
@@ -155,7 +155,7 @@ test_in_path() {
 edit_file() {
     while ! test_in_path "$EDITOR"; do
         msg '$EDITOR has not been set to a valid application name.'
-        read -rp "  Please enter the name of your preferred editor application:" EDITOR
+        read -rp "  Please enter the name of your preferred editor application: " EDITOR
     done
 
     while true; do

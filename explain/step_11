@@ -7,5 +7,5 @@ part of this step, you will be able to unroll the following secrets:
     - PKCS#11 hardware tokens
 
 Afterwards, two more safety measures can be applied: Backing up the LUKS header,
-in case it gets corrupted, and enrolling recovery codes, in case the primary keys
-get lost.
+in case it gets corrupted, and enrolling recovery codes, in case the primary
+keys get lost.
