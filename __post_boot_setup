@@ -306,7 +306,7 @@ enroll_tpm() {
         return
     fi
 
-    explain tpm_pcr
+    explain_and_confirm tpm_pcr
     priv_key=/etc/systemd/tpm2-pcr-private-key.pem
     pub_key=/etc/systemd/tpm2-pcr-public-key.pem
     msg "Generating PCR keys..."
@@ -409,6 +409,7 @@ enroll_secrets() {
     while true; do
         msg_bold "Currently enrolled secrets:"
         systemd-cryptenroll "$part"
+        msg "Which secret would you like to enroll?"
         tab_display "${secrets[@]}"
         choice="$(select_item "${secrets[@]}")"
 

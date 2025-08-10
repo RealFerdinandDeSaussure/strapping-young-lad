@@ -1,18 +1,18 @@
-A common way to enroll the TPM, is to bind to one of its PCR banks. These banks
-store encrypted system information of various kind, most notably the Secure
-Boot status in PCR7. The TPM will compare current values against the ones in
-the PCR banks and only unlock a secret when these values match. However, values
-can regularly change due to actions that may not be related to security issues
-at all - especially in a dual boot environment.
+A common way to enroll the TPM is to bind to one of its PCR banks. These banks
+store encrypted system information of various kinds, most notably the Secure
+Boot status in PCR7. The TPM will compare current values against the ones in the
+PCR banks and only unlock a secret when these values match. However, values can
+regularly change due to actions that may not be related to security issues at
+all - especially in a dual boot environment.
 
 For that reason, instead of binding directly to PCR banks, we will bind to a
 "PCR policy". A policy refers to the expected state of multiple PCR banks at
-specific phases of the boot process. It will create a digest, which is a hash
-of all expected PCR values at one of these specific stages, sign it with a
-private key, and package it with the UKI. Then, when an encrypted volume with
-an enrolled TPM2 secret is encountered during the boot process, the current
-state of the PCR banks will be matched against all available digests in the
-UKI. If one matches and the digest can be verified with the public key also
-packaged into the UKI, the volume will be unlocked.
+specific phases of the boot process. It will create a digest - which is a hash
+of all expected PCR values at one of these specific stages - sign it with a
+private key, and package it with the UKI. Then, when an encrypted volume with an
+enrolled TPM2 secret is encountered during the boot process, the current state
+of the PCR banks will be matched against all available digests in the UKI. If
+one matches and the digest can be verified with the public key also packaged
+into the UKI, the volume will be unlocked.
 
 To enroll the policy, we will first generate our keys for signing.

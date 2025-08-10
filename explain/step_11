@@ -1,11 +1,11 @@
 At this point, we are ready to enroll other secrets into our LUKS device(s).
-Hardware tokens generally provide stronger security than a plain passphrase
+Hardware tokens generally provide stronger security than a plain passphrase,
 especially when they require additional unlocking with their own passphrase. As
 part of this step, you will be able to unroll the following secrets:
-    - a TPM2 device
-    - a FIDO2 hardware token
-    - a PKCS#11 hardware token
+    - TPM2 devices
+    - FIDO2 hardware tokens
+    - PKCS#11 hardware tokens
 
-Afterwards, we will optionally take two more safety measures: Backing up the
-LUKS header, in case it gets corrupted and enrolling recovery codes, in case
-the primary keys get lost.
+Afterwards, two more safety measures can be applied: Backing up the LUKS header,
+in case it gets corrupted, and enrolling recovery codes, in case the primary keys
+get lost.

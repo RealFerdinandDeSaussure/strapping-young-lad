@@ -139,7 +139,25 @@ awk_calc() {
     awk "BEGIN { printf \"%.0f\", $1 }"
 }
 
+test_in_path() {
+    local found
+    declare -a paths
+    IFS=: read -ra paths <<< "$PATH"
+    for p in "${paths[@]}"; do
+        if [ -f "${p}/${1}" ]; then
+            found=1
+            break
+        fi
+    done
+    test "$found" = 1
+}
+
 edit_file() {
+    while ! test_in_path "$EDITOR"; do
+        msg '$EDITOR has not been set to a valid application name.'
+        read -rp "  Please enter the name of your preferred editor application:" EDITOR
+    done
+
     while true; do
         $EDITOR "$1" || exit 1
         ask_y_n "Would you like to continue? (Replying No will reopen the file. Press Ctrl-C to exit.)" && break
@@ -452,7 +470,7 @@ test_system_mounted() {
     fi
 
     for i in "${mntpoints[@]}"; do
-        read -r -d $'\t' -a arr <<< "$i"
+        IFS=$'\t' read -r -a arr <<< "$i"
         lsblk -nQ "PARTTYPE == \"${arr[1]}\" && MOUNTPOINT == \"${arr[3]}\"" >/dev/null && continue
         msg "${arr[0]} partition ${arr[2]} not mounted at ${arr[3]}. Mount it before continuing."
         err=1
