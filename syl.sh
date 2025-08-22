@@ -65,15 +65,27 @@ get_config_var_efi_partition() {
     test -z "${config_vars[EFI_PARTITION]}" && { msg "No EFI partition found."; exit 1; }
 }
 
+val_config_var_efi_partition() {
+    test "$(lsblk -o PARTTYPE "${config_vars[EFI_PARTITION]}")" = "${PART_TYPES[efi]}"
+}
+
 get_config_var_root_partition() {
     get_config_var INSTALL_DISK
     config_vars[ROOT_PARTITION]="$(get_p "${config_vars[INSTALL_DISK]}" root)"
     test -z "${config_vars[ROOT_PARTITION]}" && { msg "No root partition found."; exit 1; }
 }
 
+val_config_var_root_partition() {
+    test "$(lsblk -o PARTTYPE "${config_vars[ROOT_PARTITION]}")" = "${PART_TYPES[root]}"
+}
+
 get_config_var_xbootldr_partition() {
     get_config_var INSTALL_DISK
     config_vars[XBOOTLDR_PARTITION]="$(get_p "${config_vars[INSTALL_DISK]}" xbootldr)"
+}
+
+val_config_var_xbootldr_partition() {
+    test "$(lsblk -o PARTTYPE "${config_vars[XBOOTLDR_PARTITION]}")" = "${PART_TYPES[xbootldr]}"
 }
 
 get_config_var_root_encrypted_name() {
@@ -88,8 +100,20 @@ get_config_var_root_encrypted_name() {
     config_vars[ROOT_ENCRYPTED_NAME]="$(basename "$crypt_name")"
 }
 
+val_config_var_root_encrypted_name() {
+    test -b "${config_vars[ROOT_ENCRYPTED_NAME]}"
+}
+
+val_config_var_install_disk() {
+    test -b "${config_vars[INSTALL_DISK]}"
+}
+
+val_config_var_gpt_automount() {
+    [[ "${config_vars[GPT_AUTOMOUNT]}" =~ [01] ]]
+}
+
 get_config_var() {
-    local getter val env
+    local getter val env validator
     test -n "${config_vars["$1"]+x}" && return
 
     # try to get value from the environment
@@ -114,6 +138,11 @@ Please provide a value for this setting below. Be aware that provided values
 (including empty ones) will not be validated."
     read -rp "  $1> " val
     config_vars["$1"]="$val"
+    validator="val_config_var_${1@L}"
+    if ! $validator; then
+        msg "Invalid value ${config_vars["$1"]}. Exiting..."
+        exit 1
+    fi
 }
 
 get_safe_filename() {
