@@ -465,21 +465,27 @@ insert_crypttab_line() {
 }
 
 set_primary_secret() {
-    local part prim key
+    local part prim
     declare -a secrets
     part="$1"
     while read -r i; do
         secrets+=("$i")
     done < <(systemd-cryptenroll "$part" | awk '{if ($1 ~ /[[:digit:]]/) print $2}')
 
-    msg "This is the final overview of secrets enrolled for $part:"
-    printf "%s\n" "${secrets[@]}"
-    if [ ${#secrets[@]} -eq 1 ]; then
-        prim="${secrets[0]}"
-    else
-        msg "Select which of these to use for unlocking at boot."
-        prim="$(select_item "${secrets[@]}")"
-    fi
+    while true; do
+        msg_bold "This is the final overview of secrets enrolled for $part:"
+        printf "%s\n" "${secrets[@]}"
+        if [ ${#secrets[@]} -eq 1 ]; then
+            prim="${secrets[0]}"
+        else
+            msg "Select which of these to use for unlocking at boot."
+            prim="$(select_item "${secrets[@]}")"
+        fi
+        test "$prim" != "recovery" && break
+        msg "Recovery keys are not intended as a primary key for unlocking. Please select a
+different method."
+    done
+
 
     msg "Editing /etc/crypttab.initramfs with ${prim} as primary key..."
     explain_and_confirm crypttab.initramfs "
@@ -509,6 +515,7 @@ corresponding to their respective devices are:
     esac
 
     edit_file /etc/crypttab.initramfs
+    # TODO: set kernel cmdline and rebuild UKIs
 }
 
 finalize_luks() {
