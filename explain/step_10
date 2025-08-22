@@ -4,11 +4,11 @@ these signatures need to be verified before the respective part is executed.
 
 Additionally, device firmware can also be factory-signed and make use of Secure
 Boot for verification. In these cases, Microsoft's keys have been used for
-signing and not having their certificates enrolled, will result in the device
-not working. In the most extreme circumstances, this could cause your entire
-system to be bricked. For this reason, we will also enroll Microsoft's keys.
-This is non-optional as it has no downsides and could prevent dramatic damage to
-your system.
+signing and not having their certificates enrolled will result in the device not
+working. In the most extreme circumstances, this could theoretically cause your
+entire system to be bricked. For this reason, we will also enroll Microsoft's
+keys. This is non-optional as it has no downsides and could prevent dramatic
+damage to your system.
 
 For the reason listed above, Secure Boot can be dangerous if set up improperly
 and on devices with factory-signed firmware. This script takes the necessary

@@ -3,8 +3,8 @@ looks roughly like this:
      1. the boot loader systemd-boot is executed by the UEFI firmware
      2. the boot loader executes a kernel file, which packages the different
          parts required for booting Linux into a a single executable
-     3. it passes arguments, such as the location of the root partition to the
-         kernel through the command line; the command line is read either from a
+     3. it passes arguments, such as the location of the root partition, to the
+         kernel through the commandline; the commandline is read either from a
          config file or may be entered directly in the boot loader
      4. the kernel loads an initial RAM file system (initramfs), a basic
          environment that includes everything needed to bootstrap the system
@@ -12,11 +12,12 @@ looks roughly like this:
          embedded crypttab file to unlock the volumes described within
      6. after successfully unlocking the device holding the root partition,
          systemd will attempt to mount it using the information given to the
-         kernel through the command line
+         kernel through the commandline
      7. once early boot has finished, control will be handed over from the
          initramfs to the system
 
-Understanding the general boot chain is useful, as it helps when troubleshoot
-any errors that may occur. While all the components described above will be
-covered by this script, we will make use of unified kernel images (UKI) that
-package them into a single UEFI executable.
+Understanding the general boot chain is useful, as it helps troubleshooting any
+errors that may occur. While all the components described above will be set up
+by this script, we will make use of unified kernel images (UKI) that package the
+kernel, the initramfs and additional configuration files into a single UEFI
+executable.

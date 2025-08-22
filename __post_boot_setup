@@ -208,6 +208,9 @@ set_sb_signing_in_uki_conf() {
     add_to_conf "$conf" "SecureBootPrivateKey=/root/sb-keys/db.key" UKI
     add_to_conf "$conf" "SecureBootSigningTool=systemd-sbsign" UKI
     add_to_conf "$conf" "SignKernel=true" UKI
+
+    explain_and_confirm uki.conf 
+    edit_file "$conf"
 }
 
 sign_bootloader_ukis() {
@@ -444,14 +447,14 @@ insert_crypttab_line() {
         dev="UUID=$(lsblk -ndo UUID "${config_vars[ROOT_PARTITION]}")"
     fi
 
-    options="$(awk -v n="$name" '{if ($1 == n) print $4}')"
+    options="$(awk -v n="$name" '{if ($1 == n) print $4}' < "$ct")"
     if [ -z "$options" ]; then
         options="$1"
     else
         options+=",$1"
     fi
 
-    line="$(awk -v n="$name" -v d="$dev" -v o="$options" '{if ($1 == n) print " "n" "d" none "o}' "$ct")"
+    line="$(awk -v n="$name" -v d="$dev" -v o="$options" '{if ($1 == n) print " "n" "d" none "o}' < "$ct")"
     if [ -n "$line" ]; then
         sed -i "/^\s*${name}/d" "$ct"
     else
@@ -482,9 +485,9 @@ set_primary_secret() {
     explain_and_confirm crypttab.initramfs "
 
 The \"options\" field is where we specify which of our enrolled hardware tokens
-can be used to unlock the root partition. Only one token has been set up added
-to the file but you may add additional tokens separated by comma, if you wish.
-They can then all be used to unlock the partition at boot. The available options
+can be used to unlock the root partition. Only one token has been added to the
+file but you may add additional tokens separated by comma, if you wish. They can
+then all be used to unlock the partition at boot. The available options
 corresponding to their respective devices are:
     - TPM2: tpm2-device=<device>
     - FIDO2: fido2-device=<device>

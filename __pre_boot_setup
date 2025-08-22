@@ -417,7 +417,9 @@ create_crypttab_initramfs() {
 As you have set up automounting, you do not need to create this file. After
 setting up hardware tokens to unlock the encrypted root volume, we will come
 back to crypttab.initramfs as it is needed to specify the unlock method at boot.
-If you would like, we can still create an crypttab.initramfs file now."
+Creating crypttab.initramfs now is not recommended. The system will still boot
+but will display an error message as the root partition will attempt to unlock
+twice (once automatically, once manually)."
     ask_y_n "Would you like to create and edit crypttab.initramfs now?" || return
     else
         msg "Editing crypttab.initramfs..."
@@ -432,7 +434,6 @@ If you would like, we can still create an crypttab.initramfs file now."
 
     echo "$root_entry" >> /mnt/etc/crypttab.initramfs
     edit_file /mnt/etc/crypttab.initramfs
-    # option for crypttab.initramfs (fido2)
 }
 
 setup_mkinitcpio() {
