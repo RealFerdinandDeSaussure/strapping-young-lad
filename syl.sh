@@ -15,9 +15,11 @@ set -o pipefail
 declare -A config_vars
 declare -A man_config_vars
 
-man_config_vars[INSTALL_DISK]="Path to the block device that holds or should hold partitions for the installation."
+man_config_vars[INSTALL_DISK]="Path to the block device that holds or should hold partitions for the
+installation."
 man_config_vars[ROOT_ENCRYPTED_NAME]="Name of the mapping for the unlocked encrypted root partition."
-man_config_vars[GPT_AUTOMOUNT]="Whether the root partition should be mounted automatically by systemd (0=no, 1=yes)."
+man_config_vars[GPT_AUTOMOUNT]="Whether the root partition should be mounted automatically by systemd
+(0=no,1=yes)."
 man_config_vars[ROOT_PARTITION]="Path to the partition that should hold the root file system."
 man_config_vars[EFI_PARTITION]="Path to the EFI system partition."
 man_config_vars[XBOOTLDR_PARTITION]="Path to the Linux extended boot loader partition."
@@ -89,22 +91,27 @@ get_config_var_root_encrypted_name() {
 get_config_var() {
     local getter val env
     test -n "${config_vars["$1"]+x}" && return
+
     # try to get value from the environment
     env=SYL_"${1^^}"
-    config_vars["$1"]="${!env}"
-    test -n "${config_vars["$1"]}" && return
+    if [ -n "${!env}" ]; then
+       config_vars["$1"]="${!env}"
+       return
+    fi
 
     getter="get_config_var_${1@L}"
     if declare -F "$getter" >/dev/null; then
         $getter
-        test -n "${config_vars["$1"]}" && return
+        test -n "${config_vars["$1"]+x}" && return
     fi
 
-    msg "Setting '$1' not defined. Normally, this is because a previous step was skipped.
+    msg "
+Setting '$1' not defined. Normally, this is because a previous step was skipped.
 This is the documentation for this setting:
  ${man_config_vars["$1"]}
 
-Please provide a value for this setting below. Be aware that provided values will not be validated."
+Please provide a value for this setting below. Be aware that provided values
+(including empty ones) will not be validated."
     read -rp "  $1> " val
     config_vars["$1"]="$val"
 }
