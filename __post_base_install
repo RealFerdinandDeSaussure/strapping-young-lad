@@ -36,6 +36,7 @@ session		include		system-auth" > /etc/pam.d/sudo
 
 add_u() {
     local name shell groups
+    declare -a group_arr
     read -rp "  Please provide a user name for the new account: " name
 
     msg "Please provide the full path to the login shell below. An incorrect path will
@@ -47,16 +48,22 @@ result in the user being unable to login."
         msg "$shell does not exist."
     done
 
-    msg "By default, a group of the same name will be created for every new user and the
-user will be added to it. You may also add the user to additional groups. If
-sudo has been set up accordingly, you may grant super-user access by adding them
-to the wheel group. Please give any groups the user should be added to beyond
-his own below, separated by commas."
-    read -rp "  What groups should the user be added to?" groups
+    explain groups
+    while true; do
+        read -rp "  What groups should the user be added to? " groups
+        IFS=, read -ra group_arr <<< "$groups"
+        for g in "${group_arr[@]}"; do
+            cut -d: -f1 < /etc/group | grep -Fxq "$g" && continue
+            msg "Group $g does not exist."
+            continue 2
+        done
+        break
+    done
 
     msg "Creating user $name..."
     useradd -m -G "$groups" -s "$shell" "$name" || exit 1
     if [[ "$groups" =~ "wheel" ]]; then
+        msg "Please provide a password for ${name}."
         passwd "$name" || exit 1
     else
         msg "It is recommended to specify a password for each user."
