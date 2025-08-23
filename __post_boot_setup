@@ -439,14 +439,15 @@ enroll_secrets() {
 insert_crypttab_line() {
     local ct options name dev line
     ct=/etc/crypttab.initramfs
-    get_config_var ROOT_ENCRYPTED_NAME
-    name="${config_vars[ROOT_ENCRYPTED_NAME]}"
 
     get_config_var GPT_AUTOMOUNT
     if [ "${config_var[GPT_AUTOMOUNT]}" -eq 0 ]; then
         get_config_var ROOT_PARTITION
+        get_config_var ROOT_ENCRYPTED_NAME
         dev="UUID=$(lsblk -ndo UUID "${config_vars[ROOT_PARTITION]}")"
+        name="${config_vars[ROOT_ENCRYPTED_NAME]}"
     else
+        name=root
         dev=/dev/gpt-auto-root-luks
     fi
 
@@ -508,7 +509,8 @@ different method."
     esac
 
     edit_file /etc/crypttab.initramfs
-    # TODO: set kernel cmdline and rebuild UKIs
+    msg "Rebuilding UKI(s)..."
+    mkinitcpio -P || exit 1
 }
 
 finalize_luks() {
