@@ -107,7 +107,7 @@ setup_pipewire() {
     done
 
     for u in "${choice[@]}"; do
-        sudo -u "$u" systemctl --user enable pipewire.socket || exit 1
+        machinectl shell "${u}@" /usr/bin/systemctl --user enable pipewire.socket || exit 1
     done
 }
 
