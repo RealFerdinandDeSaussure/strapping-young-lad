@@ -124,5 +124,5 @@ finish_setup() {
     explain sound_server
     ask_y_n "Would you like to set up PipeWire as an audio server?" && setup_pipewire
 
-    explain_and_confirm goodbye
+    explain goodbye
 }
