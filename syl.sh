@@ -104,12 +104,21 @@ val_config_var_root_encrypted_name() {
     test -b "${config_vars[ROOT_ENCRYPTED_NAME]}"
 }
 
-val_config_var_install_disk() {
-    test -b "${config_vars[INSTALL_DISK]}"
+get_config_var_gpt_automount() {
+    test_on_live_system && return
+    if [ -b /dev/gpt-auto-root-luks ]; then
+        config_vars[GPT_AUTOMOUNT]=1
+    else
+        config_vars[GPT_AUTOMOUNT]=0
+    fi
 }
 
 val_config_var_gpt_automount() {
     [[ "${config_vars[GPT_AUTOMOUNT]}" =~ [01] ]]
+}
+
+val_config_var_install_disk() {
+    test -b "${config_vars[INSTALL_DISK]}"
 }
 
 get_config_var() {

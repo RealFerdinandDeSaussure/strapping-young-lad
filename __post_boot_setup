@@ -209,7 +209,7 @@ set_sb_signing_in_uki_conf() {
     add_to_conf "$conf" "SecureBootSigningTool=systemd-sbsign" UKI
     add_to_conf "$conf" "SignKernel=true" UKI
 
-    explain_and_confirm uki.conf 
+    explain_and_confirm uki.conf  || pause
     edit_file "$conf"
 }
 
@@ -325,12 +325,12 @@ enroll_tpm() {
     pause
 
     header="PCRSignature:initrd"
-    grep -Fq "[${header}]" "$uki_conf" || echo -e "\n[${header}]" >> "$uki_conf"
+    grep -Fq "[${header}]" "$uki_conf" || echo -e "[${header}]" >> "$uki_conf"
     add_to_conf "$uki_conf" "PCRPrivateKey=${priv_key}" "$header"
     add_to_conf "$uki_conf" "PCRPublicKey=${pub_key}" "$header"
     add_to_conf "$uki_conf" "Phases=enter-initrd" "$header"
 
-    explain_and_confirm pcr_conf
+    explain_and_confirm pcr_conf || pause
     edit_file "$uki_conf"
 
     msg "Rebuilding UKI(s)..."
@@ -442,10 +442,12 @@ insert_crypttab_line() {
     get_config_var ROOT_ENCRYPTED_NAME
     name="${config_vars[ROOT_ENCRYPTED_NAME]}"
 
-    dev=/dev/gpt/auto-root-luks
-    if [ ! -b "$dev" ]; then
+    get_config_var GPT_AUTOMOUNT
+    if [ "${config_var[GPT_AUTOMOUNT]}" -eq 0 ]; then
         get_config_var ROOT_PARTITION
         dev="UUID=$(lsblk -ndo UUID "${config_vars[ROOT_PARTITION]}")"
+    else
+        dev=/dev/gpt-auto-root-luks
     fi
 
     options="$(awk -v n="$name" '{if ($1 == n) print $4}' < "$ct")"
@@ -532,7 +534,7 @@ finalize_luks() {
     if ask_y_n "Would you like to create a backup of the LUKS header?"; then
         cryptsetup luksHeaderBackup "${config_vars[ROOT_PARTITION]}" --header-backup-file "$header_bckp" || exit 1
         msg "Header backup saved at ${header_bckp}."
-        msg_bold "Copy it to a safe, offline location outside of the encrypted partition and shred
-${header_bckp}!"
+        msg_bold "Copy it to a safe, offline location outside of the encrypted partition and
+remove ${header_bckp}!"
     fi
 }
