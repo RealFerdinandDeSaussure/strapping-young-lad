@@ -1,0 +1,31 @@
+To let the kernel know how to unlock the root partition, we need to add the
+relevant option to /etc/crypttab.initramfs, which will be packaged into the UKI.
+We have covered crypttab.initramfs before but here is an overview of its four
+columns as a reminder:
+    - volume-name: the name of the mapping the unlocked volume will take
+    - encrypted device: the path to the encrypted volume or its device UUID if
+        starting with "UUID="
+    - key-file: the path to the key-file; can be "none" or "-" if unlocked via
+        password entry or a method specified in the next field
+    - options: options for unlocking the volume, separated by comma
+
+The last field ("options") is where we specify which of our enrolled hardware
+tokens can be used to unlock the root partition. Only one token has been added
+to the file but you may add additional tokens separated by comma, if you wish.
+systemd will attempt to validate them in the order provided. The available
+options corresponding to their respective devices are:
+    - TPM2: tpm2-device=<device>
+    - FIDO2: fido2-device=<device>
+    - PKCS#11: pkcs11-token-uri=<uri>
+
+One thing to keep in mind is that the volume-name field MUST be set to a mapping
+name that corresponds to the root parameter on the kernel commandline (set in
+/etc/kernel/cmdline). For example, this parameter set on the commandline:
+root=/dev/mapper/cryptroot
+would require setting the volume-name column to "cryptroot".
+If you are using systemd-automounting and are not setting the root parameter on
+the kernel commandline, volume-name must instead be set to "root".
+
+The script will take care of filling in the right name but it is mentioned here
+nonetheless as putting in a wrong name is a common mistake that will result in
+an unbootable system.

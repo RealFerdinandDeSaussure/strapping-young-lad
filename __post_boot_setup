@@ -491,17 +491,7 @@ different method."
 
 
     msg "Editing /etc/crypttab.initramfs with ${prim} as primary key..."
-    explain_and_confirm crypttab.initramfs "
-
-The \"options\" field is where we specify which of our enrolled hardware tokens
-can be used to unlock the root partition. Only one token has been added to the
-file but you may add additional tokens separated by comma, if you wish. They can
-then all be used to unlock the partition at boot. The available options
-corresponding to their respective devices are:
-    - TPM2: tpm2-device=<device>
-    - FIDO2: fido2-device=<device>
-    - PKCS#11: pkcs11-token-uri=<uri>
-" || pause
+    explain_and_confirm crypttab.initramfs-token || pause
     case "$prim" in
         tpm2)
             insert_crypttab_line "tpm2-device=$(get_secret_device tpm2-device)"
