@@ -363,6 +363,7 @@ answer 'Yes' is given in parentheses for each question."
     done
     ask_y_n "Do you want to use a wireless connection on the system (iwd)?" && pkgs+=("iwd")
     ask_y_n "Do you want to encrypt the DNS queries made by the system (dnscrypt-proxy)?" && pkgs+=("dnscrypt-proxy")
+    ask_y_n "Do you want to allow regular users to shut down the computer? (polkit)" && pkgs+=("polkit")
     ask_y_n "Do you want to build custom (e.g. AUR) packages on the system? (base-devel)" && pkgs+=("base-devel")
     echo -n "${pkgs[*]}"
 }
