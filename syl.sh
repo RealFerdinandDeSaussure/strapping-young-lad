@@ -201,10 +201,7 @@ edit_file() {
 }
 
 pause() {
-    local prompt
-    prompt="$1"
-    test -z "$prompt" && prompt="Press any key to continue."
-    read -n1 -srp "$prompt"
+    read -n1 -srp "Press any key to continue."
     echo ""
 }
 

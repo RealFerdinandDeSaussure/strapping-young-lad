@@ -322,6 +322,7 @@ enroll_tpm() {
     fi
 
     msg "Editing ${uki_conf}..."
+    pause
 
     header="PCRSignature:initrd"
     grep -Fq "[${header}]" "$uki_conf" || echo -e "\n[${header}]" >> "$uki_conf"
@@ -498,7 +499,7 @@ corresponding to their respective devices are:
     - TPM2: tpm2-device=<device>
     - FIDO2: fido2-device=<device>
     - PKCS#11: pkcs11-token-uri=<uri>
-"
+" || pause
     case "$prim" in
         tpm2)
             insert_crypttab_line "tpm2-device=$(get_secret_device tpm2-device)"

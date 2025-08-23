@@ -127,7 +127,7 @@ setup_network() {
     eth_custom="$(mktemp)"
     wifi_custom="$(mktemp)"
 
-    ask_y_n "Would you like to configure wired network access?" && eth_serv="$(create_netservice ethernet "$eth_custom")"
+    ask_y_n "Would you like to set up wired network access?" && eth_serv="$(create_netservice ethernet "$eth_custom")"
     if achroot pacman -Q iwd >/dev/null 2>&1; then
         wifi_serv="$(create_netservice wifi-station "$wifi_custom")"
         echo "IgnoreCarrierLoss=3s" >> "$wifi_custom"
@@ -224,11 +224,11 @@ create_zram() {
     local zram_conf zram_dev
     zram_conf=/mnt/etc/systemd/zram-generator.conf
 
-    msg "Generating zram-generator config file..."
+    msg "Editing zram-generator config file..."
     echo "[zram0]
 zram-size = min(ram / 2, 4096)
 compression-algorithm = zstd" > "$zram_conf"
-    explain_and_confirm zram-generator.conf
+    explain_and_confirm zram-generator.conf || pause
     edit_file "$zram_conf"
 
     # in case the user has added additional zram devices
@@ -392,8 +392,8 @@ generate_kcmdline() {
     
     msg "Editing kernel commandline file..."
     if [ "${config_vars[GPT_AUTOMOUNT]}" = 0 ]; then
-        explain_and_confirm kernel_cmdline_options " || pause
-    - root: the root partition (i.e. the mapping of the unlocked cryptdevice)"
+        explain_and_confirm kernel_cmdline_options "
+    - root: the root partition (i.e. the mapping of the unlocked cryptdevice)" || pause
     else
         explain_and_confirm kernel_cmdline_options || pause
     fi
@@ -452,7 +452,6 @@ setup_mkinitcpio() {
 
     adapt_hooks "$mkcp_conf"
 
-    pause
     edit_file "$mkcp_conf"
     cp "$mkcp_conf" /mnt/etc/mkinitcpio.conf
 
