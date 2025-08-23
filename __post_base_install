@@ -19,9 +19,10 @@ uninstall sudo at a later time."
 auth		include		system-auth
 account		include		system-auth
 session		include		system-auth" > /etc/pam.d/sudo
-        ln -s /etc/pam.d/sudo /etc/pam.d/sudo-i || exit 1
+        ln -vbs --suffix=.bckp /etc/pam.d/sudo /etc/pam.d/sudo-i || exit 1
         echo 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
+root ALL=(ALL:ALL) ALL
 %wheel ALL=(ALL:ALL) ALL' > "$sudoers"
 
         msg "By default the sudo prompt will timeout after 5 minutes."
@@ -31,7 +32,7 @@ session		include		system-auth" > /etc/pam.d/sudo
     fi
 
     msg "Symlinking sudo to sudo-rs..."
-    ln -s /usr/bin/sudo-rs /usr/local/bin/sudo || exit 1
+    ln -vbs --suffix=.bckp /usr/bin/sudo-rs /usr/local/bin/sudo || exit 1
 }
 
 add_u() {
@@ -50,7 +51,7 @@ result in the user being unable to login."
 
     explain groups
     while true; do
-        read -rp "  What groups should the user be added to? " groups
+        read -rp "  What groups should the user be added to (default: none)? " groups
         IFS=, read -ra group_arr <<< "$groups"
         for g in "${group_arr[@]}"; do
             cut -d: -f1 < /etc/group | grep -Fxq "$g" && continue
@@ -67,7 +68,7 @@ result in the user being unable to login."
         passwd "$name" || exit 1
     else
         msg "It is recommended to specify a password for each user."
-        ask_y_n "Would you like to set a password for ${user}?" && { passwd "$name" || exit 1; }
+        ask_y_n "Would you like to set a password for ${name}?" && { passwd "$name" || exit 1; }
     fi
 }
 
@@ -95,10 +96,10 @@ setup_pipewire() {
 (separated by commas) for whom you would like to enable PipeWire."
     while true; do
         tab_display "${users[@]}"
-        read -rp "  For which users should PipeWire be enabled?" answer
+        read -rp "  For which users should PipeWire be enabled? " answer
         IFS=, read -ra choice <<< "$answer"
         for u in "${choice[@]}"; do
-            test -f /home/"$u" && continue
+            test -d /home/"$u" && continue
             msg "User $u does not exist."
             continue 2
         done
