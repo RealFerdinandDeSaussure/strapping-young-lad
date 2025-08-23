@@ -1,0 +1,124 @@
+# -*-bash-ts-*-
+# shellcheck source=SCRIPTDIR/syl.sh
+
+setup_sudo() {
+    local sudoers
+    sudoers=/etc/sudoers-rs
+    if ! pacman -Q sudo-rs >/dev/null 2>&1; then
+        msg "Installing sudo-rs..."
+        pacman -Sy sudo-rs || exit 1
+    fi
+    if pacman -Q sudo >/dev/null 2>&1; then
+        msg "The original sudo is not required while using sudo-rs."
+        ask_y_n "Do you wish to remove the \"sudo\" package?" && { pacman -R sudo || exit 1; }
+    fi
+    if pacman -Q sudo >/dev/null 2>&1; then
+        msg "With sudo installed, most of the files sudo-rs relies on are already in place
+and we will therefore not create them."
+        msg_bold "Please be aware that this means sudo-rs will stop working, should you decide to
+uninstall sudo at a later time."
+    else
+        msg "Creating standard config files for sudo-rs..."
+        echo "#%PAM-1.0
+auth		include		system-auth
+account		include		system-auth
+session		include		system-auth" > /etc/pam.d/sudo
+        ln -s /etc/pam.d/sudo /etc/pam.d/sudo-i || exit 1
+        echo 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+%wheel ALL=(ALL:ALL) ALL' > "$sudoers"
+
+        msg "By default the sudo prompt will timeout after 5 minutes."
+        ask_y_n "Do you wish to disable this timeout?" && echo "Defaults passwd_timeout=0" >> "$sudoers"
+
+        chmod 0440 "$sudoers" || exit 1
+    fi
+
+    msg "Symlinking sudo to sudo-rs..."
+    ln -s /usr/bin/sudo-rs /usr/local/bin/sudo || exit 1
+}
+
+add_u() {
+    local name shell groups
+    read -rp "  Please provide a user name for the new account: " name
+
+    msg "Please provide the full path to the login shell below. An incorrect path will
+result in the user being unable to login."
+    while true; do
+        read -rp "  What is the user's login shell (default: /bin/bash): " shell
+        test -n "$shell" && shell=/bin/bash
+        test -f "$shell" && break
+        msg "$shell does not exist."
+    done
+
+    msg "By default, a group of the same name will be created for every new user and the
+user will be added to it. You may also add the user to additional groups. If
+sudo has been set up accordingly, you may grant super-user access by adding them
+to the wheel group. Please give any groups the user should be added to beyond
+his own below, separated by commas."
+    read -rp "  What groups should the user be added to?" groups
+
+    msg "Creating user $name..."
+    useradd -m -G "$groups" -s "$shell" "$name" || exit 1
+    if [[ "$groups" =~ "wheel" ]]; then
+        passwd "$name" || exit 1
+    else
+        msg "It is recommended to specify a password for each user."
+        ask_y_n "Would you like to set a password for ${user}?" && { passwd "$name" || exit 1; }
+    fi
+}
+
+add_users() {
+    while true; do
+        ask_y_n "Do you wish to add additional users?" || break
+        add_u
+    done
+}
+
+setup_pipewire() {
+    local answer
+    declare -a pkgs users choice
+    pkgs=("pipewire" "pipewire-alsa" "pipewire-pulse")
+    msg "Installing PipeWire and related packages..."
+    ask_y_n "Would you like to also install the PipeWire documentation package?" && pkgs+=("pipewire-docs")
+    pacman -Sy --needed "${pkgs[@]}" || exit 1
+
+    for u in /home/*; do
+        users+=("$(basename "$u")")
+    done
+    test ${#users[@]} -eq 0 && return
+
+    msg "PipeWire can be enabled on a per-user basis. Please give a list of users
+(separated by commas) for whom you would like to enable PipeWire."
+    while true; do
+        tab_display "${users[@]}"
+        read -rp "  For which users should PipeWire be enabled?" answer
+        IFS=, read -ra choice <<< "$answer"
+        for u in "${choice[@]}"; do
+            test -f /home/"$u" && continue
+            msg "User $u does not exist."
+            continue 2
+        done
+        break
+    done
+
+    for u in "${choice[@]}"; do
+        sudo -u "$u" systemctl --user enable pipewire.socket || exit 1
+    done
+}
+
+finish_setup() {
+    explain pacman_color
+    ask_y_n "Would you like to enable pacman color output?" && { sed -i 's/^#Color/Color/' /etc/pacman.conf || exit 1; }
+
+    explain sudo
+    ask_y_n "Would you like to set up sudo-rs?" && setup_sudo
+
+    explain users
+    add_users
+
+    explain sound_server
+    ask_y_n "Would you like to set up PipeWire as an audio server?" && setup_pipewire
+
+    explain_and_confirm goodbye
+}

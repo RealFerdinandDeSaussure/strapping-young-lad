@@ -6,7 +6,7 @@ if [ "$1" = "-q" ]; then
 fi
 
 SCRIPTDIR="$(dirname -- "$(readlink -f -- "$0")")"
-STEPS=11
+STEPS=12
 STEP=$1
 
 # shellcheck source-path=SCRIPTDIR
@@ -604,6 +604,12 @@ step() {
             msg_bold "STEP ELEVEN: Enrolling additional secrets"
             explain step_11
             ask_for_skip && finalize_luks
+            ;;
+        12)
+            msg_bold "STEP TWELVE: Final settings"
+            explain step_12
+            ask_for_skip && finish_setup
+            ;;
     esac
     echo ""
 }

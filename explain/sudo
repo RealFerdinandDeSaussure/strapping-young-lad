@@ -1,0 +1,17 @@
+Super user rights are usually restricted to the root account. This means you
+will have to log in to a root shell to make any changes to your system or run
+commands through su, which does not cache credentials. For this reason, most
+systems make use of a helper application to run commands with elevated
+privileges as a regular user.
+
+BSD's doas has been gaining traction on Linux as it is simple and easy to set
+up. Its feature set is by design very small and does not offer much in terms of
+customization. The more established sudo falls on the other side of the scale,
+offering more features than most home users will probably ever need.
+
+This script uses sudo-rs, a drop-in and memory safe replacement for sudo written
+in Rust. sudo-rs is a more modern alternative to sudo that offers greater
+customization options than doas. We will use a common usage pattern when setting
+up sudo. All users belonging to the wheel group will be able to run any command
+with elevated privileges but will be asked to enter their password upon running
+sudo.

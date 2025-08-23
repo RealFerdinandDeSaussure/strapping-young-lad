@@ -1,0 +1,11 @@
+Linux supports audio playback out of the box through ALSA (Advanced Linux Sound
+Architecture). For even slightly more complex use cases, you will most likely
+want to use a more advanced audio framework such as PipeWire. PipeWire can be
+used as an audio server providing compatibility layers for ALSA and PulseAudio.
+
+If you intend to use a window manager or compositor, you almost certainly will
+require sound features beyond those provided by ALSA. As PipeWire is still
+relatively new, we will also set up rerouting of ALSA and PulseAudio sound
+signals through PipeWire. This ensures compatibility with virtually all
+applications. PipeWire also supports JACK, but as a more advanced audio
+solution, rerouting of JACK audio is not covered by this script.
