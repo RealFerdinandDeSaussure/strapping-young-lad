@@ -393,7 +393,7 @@ ${recovery}!"
         secrets+=("$line")
     done < <(systemd-cryptenroll "$part" | awk '{if ($1 != "SLOT") print $0}')
 
-    if grep -Fq "password" <<< "${secrets[*]}"&& [ ${#secrets[@]} -gt 1 ]; then
+    if grep -Fq "password" <<< "${secrets[*]}" && [ ${#secrets[@]} -gt 1 ]; then
         explain remove_password
         ask_y_n "Would you like to wipe all password slots?" && { systemd-cryptenroll --wipe-slot=password "$part" || exit 1; }
     fi

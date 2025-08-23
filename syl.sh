@@ -378,7 +378,7 @@ get_missing_pkgs() {
 
 bootstrap() {
     local kernel choice
-    declare -a pkgs no_pkgs extra_pkgs
+    declare -a pkgs no_pkgs
     test_system_mounted || exit 1
 
     while true; do
@@ -394,11 +394,11 @@ bootstrap() {
 
     explain common_packages
     while true; do
-        read -rp "  Please enter additional packages separated by spaces here (default: none): " choice
-        read -ra no_pkgs < <(get_missing_pkgs "$choice")
+        read -rp "  Please enter additional packages separated by commas here (default: none): " choice
+        IFS=, read -ra choice <<< "$choice"
+        read -ra no_pkgs < <(get_missing_pkgs "${choice[*]}")
         if [ "${#no_pkgs[@]}" -eq 0 ]; then
-            read -ra extra_pkgs <<< "$choice"
-            pkgs+=("${extra_pkgs[@]}")
+            pkgs+=("${choice[@]}")
             break
         else
             msg "The following packages could not be found:"
