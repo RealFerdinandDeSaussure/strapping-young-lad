@@ -1,7 +1,7 @@
 # -*-bash-ts-*-
 # shellcheck source=SCRIPTDIR/syl.sh
 
- achroot() {
+achroot() {
     arch-chroot /mnt "$@"
 }
 
@@ -281,7 +281,10 @@ create_swap_zram() {
 prepare_system() {
     test_system_mounted || exit 1
 
-    msg "First, let's setup swap and zram."
+    explain trim
+    ask_y_n "Would you like to enable the fstrim timer service?" && achroot systemctl enable fstrim.timer
+
+    msg "Now, let's setup swap and zram."
     explain swap_zram
     ask_y_n "Would you like to continue?" continue skip && create_swap_zram
 

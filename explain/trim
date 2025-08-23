@@ -1,0 +1,18 @@
+Let's start with TRIM. Unlike regular hard drives, SSDs cannot detect on their
+own which blocks are no longer in use after files are deleted. The file system
+only updates its metadata and does not inform the drive that those blocks are
+free. To address this, the TRIM command was introduced: it explicitly tells the
+SSD which blocks can be reused. Without TRIM, the SSD must perform additional
+internal cleanup (garbage collection) when space is needed, which can cause
+write performance to degrade once the drive has been filled at least once.
+
+For this reason, it is recommended to periodically run a TRIM operation on all
+disks that support it. This informs the SSD about freed space. btrfs issues
+asynchronous TRIM commands by default, so no extra configuration is required.
+However, since there is at least one FAT32 partition on our system (the EFI
+system partition) and you may have additional partitions with other file systems
+that do not automatically discard, it is still advisable to activate systemd’s
+fstrim.timer. This performs a weekly TRIM on all supported devices.
+
+If your system does not include an SSD, there is no need to activate this
+service.

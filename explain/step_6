@@ -1,5 +1,6 @@
 To ensure basic functionality, a couple of things on the new system need to be
 set up. These include:
+    - TRIM
     - swap and/or zram
     - an fstab file for mounting volumes at boot
     - the system clock and time settings
