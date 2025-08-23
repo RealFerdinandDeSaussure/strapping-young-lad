@@ -492,7 +492,7 @@ different method."
 
 
     msg "Editing /etc/crypttab.initramfs with ${prim} as primary key..."
-    explain_and_confirm crypttab.initramfs-token || pause
+    explain_and_confirm crypttab.initramfs_token || pause
     case "$prim" in
         tpm2)
             insert_crypttab_line "tpm2-device=$(get_secret_device tpm2-device)"

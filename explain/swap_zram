@@ -1,16 +1,24 @@
 Swap provides on-disk memory that the system will use if it runs out of
-read-access memory at any point.
+physical RAM.
 
-zram on the other hand creates a compressed block device in RAM on-the-fly. If
-the system runs out of memory at any point, the zram blocked device will be
-created and existing in-memory data will be moved to it, thus freeing up space
-in RAM.
+zram on the other hand creates a compressed block device in RAM. When memory
+pressure increases, pages may be swapped to zram in compressed form, effectively
+increasing the usable capacity of physical RAM.
 
-On modern systems with a RAM sizes of 16GB and more, the system can run without
+On modern systems with RAM sizes of 16GB and more, the system can run without
 any issues using only zram and no swap space at all. Swap can still be used as a
-safety net or if you have a specific RAM-heavy use case in mind. Furthermore, if
-you want to use hibernation on your system, swap space at least the size of the
-available RAM must be set up.
+safety net or if you have a specific RAM-heavy use case in mind.
+
+Hibernation on the other hand is dependent on swap and requires swap space at
+least the size of the available RAM. As a result, zram becomes less useful. This
+is because all kernels officially supported by Arch Linux activate a feature
+called zswap by default. zswap maintains a compressed cache of swapped-out pages
+in RAM. Pages are only written to the underlying swap device if the cache
+becomes full. zswap can be considered a bridge between zram and swap and having
+a large swap device with zswap enabled largely makes zram redundant. If
+hibernation is desired, this script will therefore not activate zram.
 
 If you decide to use swap, a swap file will be used. Unlike a swap partition, a
-swap file's size can be adapted much easier later if desired.
+swap file's size can be adapted much easier later if desired. Please also note
+that on btrfs an additional @snap subvolume will be created and mounted to host
+the swap file.

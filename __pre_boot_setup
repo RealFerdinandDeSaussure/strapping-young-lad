@@ -208,21 +208,49 @@ calculate_swap_rec_no_zram() {
     awk_calc "$swap_mb / 1024"
 }
 
-create_swap() {
-    local swapfile
-    swapfile=/mnt/swap/swapfile
+create_btrfs_swap() {
+    local size rootmnt
+    size="$1"
+    rootmnt="$(mktemp -d)"
+    get_config_var ROOT_ENCRYPTED_NAME
+
+    msg "Creating and mounting @swap subvolume..."
+    mount --mkdir /dev/mapper/"${config_var[ROOT_ENCRYPTED_NAME]}" "$rootmnt" || exit 1
+    btrfs subvolume create "$rootmnt/@swap" || exit 1
+    umount "$rootmnt" || exit 1
+    mount_subvol /dev/mapper/"${config_var[ROOT_ENCRYPTED_NAME]}" @swap /mnt/swap || exit 1
+
     msg "Creating swap file..."
-    if ! test -f "$swapfile"; then
-        mkswap -U clear --size "$1" --file "$swapfile" || exit 1
+    btrfs filesystem mkswapfile --size "$size" --uuid clear /mnt/swap/swapfile
+}
+
+create_swap() {
+    local size swapfile fs discard
+    size="$1"
+    test "$size" = 0 && return
+    swapfile=/mnt/swap/swapfile
+    get_config_var ROOT_ENCRYPTED_NAME
+    fs="$(lsblk -no FSTYPE /dev/mapper/${config_vars[ROOT_ENCRYPTED_NAME]})" 
+
+    if [ ! -f "$swapfile" ] && [ ! "$fs" = "btrfs" ]; then
+        msg "Creating swap file..."
+        mkswap -U clear --size "$size" --file "$swapfile" || exit 1
+    elif [ ! -f "$swapfile" ]; then
+        create_btrfs_swap "$size"
     fi
 
-    msg "Mounting swap file..."
-    swapon "$swapfile" || exit 1
+    get_config_var ROOT_PARTITION
+    msg "Next, we will mount the swap file. If it is on an SSD partition, it should be
+mounted with the --discard option."
+    ask_y_n "Is the partition ${config_var[ROOT_PARTITION]} on an SSD?" && discard="--discard"
+    swapon "$discard" "$swapfile" || exit 1
 }
 
 create_zram() {
     local zram_conf zram_dev
     zram_conf=/mnt/etc/systemd/zram-generator.conf
+    msg "Installing zram-generator for setting up zram..."
+    achroot pacman -Sy zram-generator
 
     msg "Editing zram-generator config file..."
     echo "[zram0]
@@ -244,8 +272,12 @@ create_swap_zram() {
     local hib zram ram_kb ram_gb rec
     ram_kb="$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)"
     ram_gb="$(awk_calc "$ram_kb / 1024 / 1024")"
-    ask_y_n "Will you use hibernation on the system?" && hib=yes
-    achroot pacman -Q zram-generator >/dev/null 2>&1 && zram=yes
+    if ask_y_n "Will you use hibernation on the system?"; then
+        hib=yes
+    else
+        hib=no
+        ask_y_n "Do you want to make use of zram (optionally with additional swap space)?" && zram=yes
+    fi
 
     if [ -n "$zram" ]; then
         rec="$(calculate_swap_rec_zram "$ram_kb")"
@@ -256,7 +288,6 @@ create_swap_zram() {
     if [ -n "$hib" ] && [ "$rec" -lt $(("$ram_gb" + 2)) ]; then
         rec=$(("$ram_gb" + 2))
     fi
-
 
     msg -e "Your system has \033[1m${ram_gb}GB\033[0m of RAM."
     msg -n "The recommended swap size is: "
@@ -269,13 +300,16 @@ create_swap_zram() {
     fi
 
     if ! ask_y_n "Would you like to continue with the recommendation?"; then
-        read -rp "  Please give a swap size parseable by mkswap (e.g. ending in M or G): " rec
+        msg "Please provide your desired swap size in Megabytes or 0 for no swap."
+        while true; do
+            read -rp "  Swap size in MB: " rec
+            test -z "$(tr -d "[:digit:]" <<< "$rec")" && break
+            msg "Please enter digits only."
+        done
     fi
 
-    test "$rec" = 0 && return
-
-    create_swap "$rec"
-    test -n "$zram" && create_zram
+    create_swap "${rec}M"
+    test "$hib$zram" = "noyes" && create_zram
 }
 
 prepare_system() {
