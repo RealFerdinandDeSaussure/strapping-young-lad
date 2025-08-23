@@ -9,12 +9,8 @@ setup_sudo() {
         pacman -Sy sudo-rs || exit 1
     fi
     if pacman -Q sudo >/dev/null 2>&1; then
-        msg "The original sudo is not required while using sudo-rs."
-        ask_y_n "Do you wish to remove the \"sudo\" package?" && { pacman -R sudo || exit 1; }
-    fi
-    if pacman -Q sudo >/dev/null 2>&1; then
         msg "With sudo installed, most of the files sudo-rs relies on are already in place
-and we will therefore not create them."
+and will therefore not be created."
         msg_bold "Please be aware that this means sudo-rs will stop working, should you decide to
 uninstall sudo at a later time."
     else
@@ -46,7 +42,7 @@ add_u() {
 result in the user being unable to login."
     while true; do
         read -rp "  What is the user's login shell (default: /bin/bash): " shell
-        test -n "$shell" && shell=/bin/bash
+        test -z "$shell" && shell=/bin/bash
         test -f "$shell" && break
         msg "$shell does not exist."
     done

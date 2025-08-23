@@ -1,8 +1,8 @@
-The root account should only be used for administrational purposes. For every
-day tasks, a user account with restricted privileges should be created. This
-user may or may not be allowed to execute commands with elevated privileges.
+The root account should only be used for administrational purposes. For everyday
+tasks, a user account with restricted privileges should be used.
 
-Each user receives a folder with unrestricted access in /home and may specify
-their own login shell. This is the shell that will be started upon the user's
-login. On a system with multiple users it thus makes sense to create individual
-accounts for each of them.
+Each user receives a personal folder in /home. This folder and all files
+contained within have write and read permissions restricted to the user that
+owns the folder. For each user a login shell may also be specified. This is the
+shell that will be started upon the user's login. On a system with multiple
+users it makes sense to create individual accounts for each.

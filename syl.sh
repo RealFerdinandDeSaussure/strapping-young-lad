@@ -14,6 +14,7 @@ source "${SCRIPTDIR}/__btrfs"
 source "${SCRIPTDIR}/__partitioning"
 source "${SCRIPTDIR}/__post_boot_setup"
 source "${SCRIPTDIR}/__pre_boot_setup"
+source "${SCRIPTDIR}/__post_base_install"
 
 set -o pipefail
 
