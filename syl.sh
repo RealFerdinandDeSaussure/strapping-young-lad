@@ -1,6 +1,11 @@
 #!/bin/bash
 
-SCRIPTDIR="$(dirname "$(readlink -f -- "$0")")"
+if [ "$1" = "-q" ]; then
+    QUIET=yes
+    shift
+fi
+
+SCRIPTDIR="$(dirname -- "$(readlink -f -- "$0")")"
 STEPS=11
 STEP=$1
 
@@ -23,11 +28,6 @@ man_config_vars[GPT_AUTOMOUNT]="Whether the root partition should be mounted aut
 man_config_vars[ROOT_PARTITION]="Path to the partition that should hold the root file system."
 man_config_vars[EFI_PARTITION]="Path to the EFI system partition."
 man_config_vars[XBOOTLDR_PARTITION]="Path to the Linux extended boot loader partition."
-
-if [ "$1" = "-q" ]; then
-    QUIET=yes
-    shift
-fi
 
 # --- functions
 explain() {
