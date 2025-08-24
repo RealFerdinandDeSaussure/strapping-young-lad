@@ -66,8 +66,7 @@ Only UTF-8 locales are supported by this script."
         items+=("$line")
     done < <(sed -rn 's/^([^#]\S+).+/\1/p' /mnt/etc/locale.gen)
     tab_display "${items[@]}"
-    system_locale="$(select_item "${items[@]}")"
-    achroot localectl set-locale LANG="$system_locale" || exit 1
+    echo "LANG=$(select_item "${items[@]}" | xargs)" > /mnt/etc/locale.conf || exit 1
 }
 
 set_hostname() {
