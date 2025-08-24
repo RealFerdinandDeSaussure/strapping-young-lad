@@ -214,13 +214,13 @@ create_btrfs_swap() {
     get_config_var ROOT_ENCRYPTED_NAME
 
     msg "Creating and mounting @swap subvolume..."
-    mount --mkdir /dev/mapper/"${config_var[ROOT_ENCRYPTED_NAME]}" "$rootmnt" || exit 1
+    mount --mkdir /dev/mapper/"${config_vars[ROOT_ENCRYPTED_NAME]}" "$rootmnt" || exit 1
     btrfs subvolume create "$rootmnt/@swap" || exit 1
     umount "$rootmnt" || exit 1
-    mount_subvol /dev/mapper/"${config_var[ROOT_ENCRYPTED_NAME]}" @swap /mnt/swap || exit 1
+    mount_subvol /dev/mapper/"${config_vars[ROOT_ENCRYPTED_NAME]}" @swap /mnt/swap || exit 1
 
     msg "Creating swap file..."
-    btrfs filesystem mkswapfile --size "$size" --uuid clear /mnt/swap/swapfile
+    btrfs filesystem mkswapfile --size "$size" --uuid clear /mnt/swap/swapfile || exit 1
 }
 
 create_swap() {
@@ -241,7 +241,7 @@ create_swap() {
     get_config_var ROOT_PARTITION
     msg "Next, we will mount the swap file. If it is on an SSD partition, it should be
 mounted with the --discard option."
-    ask_y_n "Is the partition ${config_var[ROOT_PARTITION]} on an SSD?" && discard="--discard"
+    ask_y_n "Is the partition ${config_vars[ROOT_PARTITION]} on an SSD?" && discard="--discard"
     swapon "$discard" "$swapfile" || exit 1
 }
 
@@ -278,13 +278,13 @@ create_swap_zram() {
         ask_y_n "Do you want to make use of zram (optionally with additional swap space)?" && zram=yes
     fi
 
-    if [ -n "$zram" ]; then
+    if [ "$zram" = "yes" ]; then
         rec="$(calculate_swap_rec_zram "$ram_kb")"
     else
         rec="$(calculate_swap_rec_no_zram "$ram_kb")"
     fi
 
-    if [ -n "$hib" ] && [ "$rec" -lt $(("$ram_gb" + 2)) ]; then
+    if [ "$hib" = "yes" ] && [ "$rec" -lt $(("$ram_gb" + 2)) ]; then
         rec=$(("$ram_gb" + 2))
     fi
 
@@ -294,8 +294,7 @@ create_swap_zram() {
         msg "None."
         msg "Your system should run fine depending only on RAM and zram."
     else
-        rec+="G"
-        msg_bold "${rec}B"
+        msg_bold "${rec}GB"
     fi
 
     if ! ask_y_n "Would you like to continue with the recommendation?"; then
@@ -305,6 +304,8 @@ create_swap_zram() {
             test -z "$(tr -d "[:digit:]" <<< "$rec")" && break
             msg "Please enter digits only."
         done
+    else
+        rec=$((rec * 1024))
     fi
 
     create_swap "${rec}M"

@@ -68,7 +68,8 @@ create_sb_key() {
 }
 
 store_sb_keyset() {
-    local sb_dir
+    local sb_dir sb_tmp_dir
+    sb_tmp_dir="$1"
     sb_dir="$HOME/sb-keys"
     msg "Storing generated keys in ${sb_dir}..."
     mkdir -p "${sb_dir}"
@@ -232,7 +233,6 @@ setup_sboot() {
     ms_tmp_dir="$(mktemp -d)"
     sb_mode="$(get_sb_mode)"
 
-
     case "$sb_mode" in
         "on")
             msg "Secure Boot is already set up. There is nothing to do."
@@ -256,7 +256,7 @@ This should never happen. Check your firmware's Secure Boot implementation."
     esac
 
     create_sb_keyset "$sb_tmp_dir"
-    store_sb_keyset
+    store_sb_keyset "$sb_tmp_dir"
 
     create_ms_db "$ms_tmp_dir" "$sb_tmp_dir"
 
@@ -441,7 +441,7 @@ insert_crypttab_line() {
     ct=/etc/crypttab.initramfs
 
     get_config_var GPT_AUTOMOUNT
-    if [ "${config_var[GPT_AUTOMOUNT]}" -eq 0 ]; then
+    if [ "${config_vars[GPT_AUTOMOUNT]}" -eq 0 ]; then
         get_config_var ROOT_PARTITION
         get_config_var ROOT_ENCRYPTED_NAME
         dev="UUID=$(lsblk -ndo UUID "${config_vars[ROOT_PARTITION]}")"
