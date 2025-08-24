@@ -443,7 +443,7 @@ create_crypttab_initramfs() {
     get_config_var ROOT_PARTITION
     root="${config_vars[ROOT_PARTITION]}"
     get_config_var GPT_AUTOMOUNT
-
+    get_config_var ROOT_ENCRYPTED_NAME
 
     if [ "${config_vars[GPT_AUTOMOUNT]}" = 1 ]; then
         explain crypttab.initramfs "
@@ -451,9 +451,8 @@ create_crypttab_initramfs() {
 As you have set up automounting, you do not need to create this file. After
 setting up hardware tokens to unlock the encrypted root volume, we will come
 back to crypttab.initramfs as it is needed to specify the unlock method at boot.
-Creating crypttab.initramfs now is not recommended. The system will still boot
-but will display an error message as the root partition will attempt to unlock
-twice (once automatically, once manually)."
+Though not needed at this point, creating this file now will not interfere with
+the boot process in any way."
     ask_y_n "Would you like to create and edit crypttab.initramfs now?" || return
     else
         msg "Editing crypttab.initramfs..."
@@ -461,9 +460,9 @@ twice (once automatically, once manually)."
     fi
 
     if [ "${config_vars[GPT_AUTOMOUNT]}" = 1 ]; then
-        root_entry="  cryptroot    /dev/gpt-auto-root-luks    none"
+        root_entry="  root    /dev/gpt-auto-root-luks    none"
     else
-        root_entry="  cryptroot    UUID=$(lsblk -ndo UUID "$root")    none"
+        root_entry="  ${config_vars[ROOT_ENCRYPTED_NAME]}    UUID=$(lsblk -ndo UUID "$root")    none"
     fi
 
     echo "$root_entry" >> /mnt/etc/crypttab.initramfs
