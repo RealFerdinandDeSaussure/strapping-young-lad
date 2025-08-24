@@ -5,8 +5,9 @@ used as an audio server providing compatibility layers for ALSA and PulseAudio.
 
 If you intend to use a window manager or compositor, you almost certainly will
 require sound features beyond those provided by ALSA. For this reason, we will
-set up PipeWire next. As it is still relatively new software, we will also set
-up rerouting of ALSA and PulseAudio sound signals through PipeWire. This ensures
+set up PipeWire next. At this point, PipeWire has been widely adopted, however
+many applications still link against ALSA or PulseAudio libraries. For this
+reason, we will also install their respective rerouting packages. This ensures
 compatibility with virtually all applications. PipeWire also supports JACK, but
 as a more advanced audio solution, rerouting of JACK audio is not covered by
 this script.
