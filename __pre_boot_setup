@@ -224,7 +224,7 @@ create_btrfs_swap() {
 }
 
 create_swap() {
-    local size swapfile fs discard
+    local size swapfile fs
     size="$1"
     test "$size" = 0 && return
     swapfile=/mnt/swap/swapfile
@@ -238,11 +238,8 @@ create_swap() {
         create_btrfs_swap "$size"
     fi
 
-    get_config_var ROOT_PARTITION
-    msg "Next, we will mount the swap file. If it is on an SSD partition, it should be
-mounted with the --discard option."
-    ask_y_n "Is the partition ${config_vars[ROOT_PARTITION]} on an SSD?" && discard="--discard"
-    swapon "$discard" "$swapfile" || exit 1
+    msg "Mounting swap file..."
+    swapon "$swapfile" || exit 1
 }
 
 create_zram() {
