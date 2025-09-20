@@ -432,7 +432,7 @@ generate_kcmdline() {
         explain_and_confirm kernel_cmdline_options || pause
     fi
 
-    cmdline="rootflags=subvol=@ quiet bgrt_disable"
+    cmdline="rootflags=subvol=@ quiet bgrt_disable sysrq_always_enabled=224"
     test "${config_vars[GPT_AUTOMOUNT]}" = 0 && cmdline="root=/dev/mapper/$cryptroot $cmdline"
     echo "$cmdline" > /mnt/etc/kernel/cmdline
     edit_file /mnt/etc/kernel/cmdline
