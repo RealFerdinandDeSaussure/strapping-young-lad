@@ -3,7 +3,7 @@ required to be present on the disk:
     - an EFI system partition
     - a root partition
 
-If either of them does not exist, you can create them interactively through
+If either of them does not exist, you can create them interactively by following
 this step.
 
 A general note on using this script: If you abort the installation process at

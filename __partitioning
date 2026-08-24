@@ -19,20 +19,33 @@ create_parts() {
     sgdisk -p "$disk" || exit 1
     msg_bold "
 The total size of this disk is roughly $(($(blockdev --getsize64 "$disk") /
-1000000)) Megabyte.
+1000000)) Megabytes.
 The total size of the largest continuous block of empty space is roughly
-$(get_largest_empty_blk_in_m "$disk") Megabyte."
+$(get_largest_empty_blk_in_m "$disk") Megabytes."
+    pause
 
     explain create_parts
+    pause
 
-    part="$(get_p_by_type "$disk" "${PART_TYPES[efi]}")"
-    test -z "$part" && create_efi_p "$disk"
+    check_for_p "$disk" efi || create_efi_p "$disk"
 
-    part="$(get_p_by_type "$disk" "${PART_TYPES[xbootldr]}")"
-    test -z "$part" && maybe_create_xbootldr_p "$disk"
+    check_for_p "$disk" xbootldr || maybe_create_xbootldr_p "$disk"
 
-    part="$(get_p_by_type "$disk" "${PART_TYPES[root]}")"
-    test -z "$part" && create_p "$disk" "root" "0" "${GDISK_PART_TYPES[root]}"
+    check_for_p "$disk" root || create_p "$disk" "root" "0" "${GDISK_PART_TYPES[root]}"
+}
+
+check_for_p() {
+    local disk name
+    disk="$1"
+    name="$2"
+    part="$(get_p_by_type "$disk" "${PART_TYPES[${name}]}")"
+    test ! "$name" = "root" && name="${name@U}"
+    if [ -n "$part" ]; then
+        msg_bold "${name} partition found on ${disk}, skipping creation..."
+        true
+    else
+        false
+    fi
 }
 
 create_efi_p() {
@@ -184,7 +197,7 @@ parse_p_size() {
             local leb product
             leb=$(get_largest_empty_blk "$disk") || exit 1
             product=$(awk_calc "$leb * ($size / 100)")
-            msg "This is equal to $(("$product" * 512 / 1000000)) Megabyte."
+            msg "This is equal to $(("$product" * 512 / 1000000)) Megabytes."
             if ask_y_n "Would you like to continue?"; then
                 echo -n "$product"
                 return

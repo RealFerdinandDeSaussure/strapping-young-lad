@@ -651,7 +651,7 @@ That will start the portion of the script that is intended for the new system."
     test_uefi || exit 1
     test_internet || exit 1
 
-    msg "(Replies to prompts do not need to be written out completely.)"
+    msg "(Replies to prompts in this script do not need to be written out completely.)"
 
     for s in $(seq "$STEP" "$STEPS"); do
         step "$s"
