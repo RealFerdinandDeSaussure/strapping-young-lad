@@ -1,38 +1,105 @@
 # -*-bash-ts-*-
 # shellcheck source=SCRIPTDIR/syl.sh
 
-setup_sudo() {
-    local sudoers
-    sudoers=/etc/sudoers-rs
-    if ! pacman -Q sudo-rs >/dev/null 2>&1; then
-        msg "Installing sudo-rs..."
-        pacman -Sy sudo-rs || exit 1
+setup_sutool() {
+    local choice conf
+    declare -a sutools verifyer
+    sutools=("sudo" "doas" "sudo-rs")
+    msg "Which of the aforementioned tools would you like to install?"
+    tab_display "${sutools[@]}"
+    choice="$(select_item "${sutools[@]}")"
+    if ! pacman -Q "$choice" >/dev/null 2>&1; then
+        msg "Installing ${choice}..."
+        pacman -Sy "$choice" || exit 1
     fi
+    case "$choice" in
+        sudo)
+            setup_sudo
+            conf=/etc/sudoers
+            verifyer=("visudo" "-c")
+            ;;
+        doas)
+            setup_doas
+            conf=/etc/doas
+            verifyer=("doas" "-C" "$conf")
+            ;;
+        "sudo-rs")
+            setup_sudo rs
+            conf=/etc/sudoers-rs
+            verifyer=("visudo-rs" "-c")
+            ;;
+    esac
+
+    chown -c root:root "$conf" || exit 1
+    chmod -c 0440 "$conf" || exit 1
+    if ! "${verifyer[@]}" >/dev/null; then
+        msg_bold "The configuration at ${conf} was not verified succesfully!"
+        msg "${choice} will *not* work correctly. Please check the configuration file
+manually before proceeding. To verify it again, run the following command:"
+        msg "${verifyer[@]}"
+        msg_bold " Do not proceed before the configuration file verifies succesfully!"
+        exit 1
+    fi
+}
+
+setup_sudo() {
+    local rs sudoers
+    declare -a opts
+    rs="$1"
+    if [ "$rs" = "rs" ]; then
+        sudoers=/etc/sudoers-rs
+        setup_sudo_rs
+    else
+        sudoers=/etc/sudoers
+    fi
+
+    touch "$sudoers"
+
+    ask_y_n "Would you like to allow users belonging to the group wheel to execute commands
+with super-user privileges?" && opts+=("%wheel ALL=(ALL:ALL) ALL")
+    msg "By default the sudo prompt will timeout after 5 minutes."
+    ask_y_n "Would you like to disable this timeout?" && opts+=("Defaults passwd_timeout=0")
+
+    for o in "${opts[@]}"; do
+        ! grep -q "^\s*${o}\s*$" "$sudoers" && echo "${o}" >> "$sudoers"
+    done
+}
+
+setup_sudo_rs() {
     if pacman -Q sudo >/dev/null 2>&1; then
-        msg "With sudo installed, most of the files sudo-rs relies on are already in place
-and will therefore not be created."
+        msg "sudo is already installed on your system so its configuration file for Linux's
+pam framework is already in place and we do not need to create it here."
         msg_bold "Please be aware that this means sudo-rs will stop working, should you decide to
 uninstall sudo at a later time."
     else
-        msg "Creating standard config files for sudo-rs..."
+        msg "Writing authentication configuration file for PAM..."
         echo "#%PAM-1.0
 auth		include		system-auth
 account		include		system-auth
 session		include		system-auth" > /etc/pam.d/sudo
-        ln -vbs --suffix=.bckp /etc/pam.d/sudo /etc/pam.d/sudo-i || exit 1
-        echo 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-root ALL=(ALL:ALL) ALL
-%wheel ALL=(ALL:ALL) ALL' > "$sudoers"
-
-        msg "By default the sudo prompt will timeout after 5 minutes."
-        ask_y_n "Do you wish to disable this timeout?" && echo "Defaults passwd_timeout=0" >> "$sudoers"
-
-        chmod 0440 "$sudoers" || exit 1
     fi
+        msg "Creating symlinks for sudo-rs..."
+        ln -vbs --suffix=.bckp /usr/bin/sudo-rs /usr/local/bin/sudo || exit 1
+        ln -vbs --suffix=.bckp /etc/pam.d/sudo /etc/pam.d/sudo-i || exit 1
+}
 
-    msg "Symlinking sudo to sudo-rs..."
-    ln -vbs --suffix=.bckp /usr/bin/sudo-rs /usr/local/bin/sudo || exit 1
+setup_doas() {
+    local conf
+    declare -a
+    conf=/etc/doas.conf
+
+    touch "$conf"
+
+    ask_y_n "Would you like to allow users belonging to the group wheel to execute commands
+with super-user privileges?" && opts+=('permit setenv {PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin} :wheel')
+    msg "By default doas does not cache credentials. However, it does provide the option
+to store credentials for 5 minutes. During this time you will not be prompted
+for your password again."
+    ask_y_n "Would you like to set this option for the wheel group?" && opts+=('permit persist setenv {PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin} :wheel')
+
+    for o in "${opts[@]}"; do
+        ! grep -q "^\s*${o}\s*$" "$conf" && echo "${o}" >> "$conf"
+    done
 }
 
 add_u() {
@@ -116,7 +183,7 @@ finish_setup() {
     ask_y_n "Would you like to enable pacman color output?" && { sed -i 's/^#Color/Color/' /etc/pacman.conf || exit 1; }
 
     explain sudo
-    ask_y_n "Would you like to set up sudo-rs?" && setup_sudo
+    ask_y_n "Would you like to set up or one of its alternatives?" && setup_sutool
 
     explain users
     add_users

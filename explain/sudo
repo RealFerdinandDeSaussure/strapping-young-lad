@@ -1,18 +1,21 @@
 Super user rights are usually restricted to the root account. This means you
-will have to log in to a root shell to make any changes to your system. You
-could also run commands through su, which does not cache credentials. For this
-reason, most systems make use of a helper application that allows regular users
-selected by root to run commands with elevated privileges.
+will have to log into a root shell to make any changes to your system. You could
+also run commands through su, which does not cache credentials and requires you
+to enter your password on each invocation. For this reason, most systems make
+use of a helper application that allows regular users selected by root to run
+commands with elevated privileges.
 
 BSD's doas has been gaining traction for this purpose on Linux as it is simple
 and easy to set up. Its feature set is by design very small and does not offer
 much in terms of customization. The more established sudo falls on the other
 side of the scale, offering more features than most home users will probably
-ever need.
+ever need. There is also sudo-rs, a drop-in and memory safe replacement for sudo
+written in Rust, which offers something of a middle ground. While it is a
+reimplementation of the established original sudo, one of its goals is to
+simplify and modernize the code base. Therefore, only a subset of the original
+sudo's feature set is implemented.
 
-This script uses sudo-rs, a drop-in and memory safe replacement for sudo written
-in Rust. sudo-rs is a more modern alternative to sudo that offers greater
-customization options than doas. We will use a common usage pattern when setting
-up sudo: all users belonging to the wheel group will be able to run any command
-with elevated privileges but will be asked to enter their password upon running
-sudo.
+If you decide to install one of these programs, you can then set up rules to
+allow users belonging to a specific group to gain super-user privileges when
+they invoke the program. This group is named "wheel" by convention so this is
+also the name we will use in this script.
