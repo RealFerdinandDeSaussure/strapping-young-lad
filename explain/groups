@@ -1,5 +1,5 @@
 By default, a group of the same name will be created for every new user and the
-user will be added to it. You may also add them to additional groups. If sudo
-has been set up accordingly, you may grant super-user access by adding the user
-to the "wheel" group. Please give any groups the user should be added to beyond
-their own below, separated by commas.
+user will be added to it. You may also add them to additional groups. If sudo or
+doas has been set up accordingly, you may grant super-user access by adding the
+user to the "wheel" group. Please give any groups the user should be added to
+beyond their own below, separated by spaces.

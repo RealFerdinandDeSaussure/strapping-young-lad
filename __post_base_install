@@ -33,6 +33,7 @@ setup_sutool() {
             ;;
     esac
 
+    msg "Setting secure permissions for ${conf}..."
     prexec chown -c root:root "$conf" || exit 1
     prexec chmod -c 0440 "$conf" || exit 1
     if ! "${verifyer[@]}" >/dev/null; then
@@ -122,7 +123,7 @@ result in the user being unable to login."
     explain groups
     while true; do
         read -rp "  What groups should the user be added to (default: none)? " groups
-        IFS=, read -ra group_arr <<< "$groups"
+        IFS=" " read -ra group_arr <<< "$groups"
         for g in "${group_arr[@]}"; do
             cut -d: -f1 < /etc/group | grep -Fxq "$g" && continue
             msg "Group $g does not exist."

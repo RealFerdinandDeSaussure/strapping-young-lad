@@ -1,5 +1,5 @@
 The root account should only be used for administrational purposes. For everyday
-tasks, a user account with restricted privileges should be used.
+tasks, a user account with restricted privileges should be preferred.
 
 Each user receives a personal folder in /home. This folder and all files
 contained within have write and read permissions restricted to the user that

@@ -1,6 +1,6 @@
 ...and that is all. From here on out, all further configuration is considered
-not general enough to be covered by this script. Nevertheless, here are some
-tips on how to further set up your system:
+too specific on the individual use case to be covered by this script.
+Nevertheless, here are some tips on how to further set up your system:
     - installing display drivers for your GPU
     - setting up a Wayland compositor, window manager or desktop environment
     - creating a user directory base structure with xdg-user-dirs
