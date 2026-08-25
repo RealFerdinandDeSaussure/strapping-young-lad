@@ -204,7 +204,7 @@ set_sb_signing_in_uki_conf() {
     conf=/etc/kernel/uki.conf
     touch "$conf" || exit 1
 
-    grep -qF "[UKI]" "$conf" || prwrite -a "$conf" "[UKI]"
+    grep -qF "[UKI]" "$conf" || echo -e "\n[UKI]" >> "$conf"
     add_to_conf "$conf" "SecureBootCertificate=/root/sb-keys/db.crt" UKI
     add_to_conf "$conf" "SecureBootPrivateKey=/root/sb-keys/db.key" UKI
     add_to_conf "$conf" "SecureBootSigningTool=systemd-sbsign" UKI
@@ -325,7 +325,7 @@ enroll_tpm() {
     pause
 
     header="PCRSignature:initrd"
-    grep -Fq "[${header}]" "$uki_conf" || echo -e "[${header}]" >> "$uki_conf"
+    grep -Fq "[${header}]" "$uki_conf" || echo -e "\n\n[${header}]" >> "$uki_conf"
     add_to_conf "$uki_conf" "PCRPrivateKey=${priv_key}" "$header"
     add_to_conf "$uki_conf" "PCRPublicKey=${pub_key}" "$header"
     add_to_conf "$uki_conf" "Phases=enter-initrd" "$header"
@@ -382,7 +382,7 @@ clear_secrets() {
     if ! systemd-cryptenroll "$part" | grep -Fq "recovery"; then
         explain recovery "$recovery"
         if ask_y_n "Would you like to enroll recovery keys?"; then
-            prexec systemd-cryptenroll --recovery-key "$part" 2>/dev/null | tee "$recovery" || exit 1
+            systemd-cryptenroll --recovery-key "$part" 2>/dev/null | tee "$recovery" || exit 1
             msg "The recovery key shown above was enrolled and written to ${recovery}."
             msg_bold "Store it safely offline outside of the encrypted partition and delete
 ${recovery}!"

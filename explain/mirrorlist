@@ -1,0 +1,14 @@
+The Arch Linux mirrorlist is located at /etc/pacman.d/mirrorlist and defines
+sources from which pacman will download packages. Generally speaking, mirrors
+located closer to you will offer better download speeds. For this reason, it is
+recommended to edit the mirrorlist before bootstrapping the system as this will
+speed up the downloading of packages. Additionally, the mirrorlist on the live
+medium will be copied over to the new system.
+
+Each line in /etc/pacman.d/mirrorlist is either the address of a pacman mirror
+or a comment prefixed with #. Mirrors are listed in decending priority. The
+mirrorlist on the live medium is usually grouped into countries making it easy
+to identify mirrors closer to you. However, as this organization is not
+guaranteed, we will open the mirrorlist directly so you can manually edit it to
+suit your needs.
+

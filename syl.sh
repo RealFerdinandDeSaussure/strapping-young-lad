@@ -444,10 +444,18 @@ get_missing_pkgs() {
     echo -n "${no_pkgs[*]}" | xargs
 }
 
+edit_mirrorlist() {
+    msg "Editing pacman mirrorlist..."
+    explain_and_confirm mirrorlist || pause
+    edit_file /etc/pacman.d/mirrorlist
+}
+
 bootstrap() {
     local kernel choice
     declare -a pkgs no_pkgs
     test_system_mounted || exit 1
+
+    edit_mirrorlist
 
     while true; do
         read -rp "  Please enter the name of your desired kernel package (default: linux): " kernel
@@ -604,7 +612,7 @@ but let's make sure."
 
     msg "This concludes the installation process from the live medium."
     explain boot_into_system
-    exit
+    exit 0
 }
 
 step() {

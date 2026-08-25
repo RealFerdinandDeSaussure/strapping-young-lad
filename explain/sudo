@@ -25,5 +25,5 @@ exist). The AUR provides a user package for this purpose called
 
 If you decide to install either of these programs, you can then set up rules to
 allow users belonging to a specific group to gain super-user privileges when
-they invoke the program. This group is named "wheel" by convention so this is
-also the name we will use in this script.
+they invoke the program. For historical reasons, this group is usually named
+"wheel" so that is also the name we will use in this script.

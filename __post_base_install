@@ -23,7 +23,7 @@ setup_sutool() {
             ;;
         doas)
             setup_doas
-            conf=/etc/doas
+            conf=/etc/doas.conf
             verifyer=("doas" "-C" "$conf")
             ;;
         "sudo-rs")
@@ -88,7 +88,7 @@ session		include		system-auth" > /etc/pam.d/sudo
 
 setup_doas() {
     local conf
-    declare -a
+    declare -a opts
     conf=/etc/doas.conf
 
     touch "$conf"

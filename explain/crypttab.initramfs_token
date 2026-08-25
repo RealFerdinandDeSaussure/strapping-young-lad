@@ -20,7 +20,7 @@ options corresponding to their respective devices are:
 
 One thing to keep in mind is that the volume-name field MUST be set to a mapping
 name that corresponds to the root parameter on the kernel commandline (set in
-/etc/kernel/cmdline). For example, this parameter set on the commandline:
+/etc/kernel/cmdline). For example, this parameter set on the commandline
 root=/dev/mapper/cryptroot
 would require setting the volume-name column to "cryptroot".
 If you are using systemd-automounting and are not setting the root parameter on
