@@ -5,13 +5,16 @@ setup_sutool() {
     local choice conf
     declare -a sutools verifyer
     sutools=("sudo" "doas" "sudo-rs")
+
     msg "Which of the aforementioned tools would you like to install?"
     tab_display "${sutools[@]}"
     choice="$(select_item "${sutools[@]}")"
+
     if ! pacman -Q "$choice" >/dev/null 2>&1; then
         msg "Installing ${choice}..."
         pacman -Sy "$choice" || exit 1
     fi
+
     case "$choice" in
         sudo)
             setup_sudo

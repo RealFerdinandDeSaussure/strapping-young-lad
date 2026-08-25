@@ -211,7 +211,7 @@ edit_file() {
 }
 
 pause() {
-    read -n1 -srp "Press any key to continue."
+    read -n1 -srp "  Press any key to continue."
     echo ""
 }
 

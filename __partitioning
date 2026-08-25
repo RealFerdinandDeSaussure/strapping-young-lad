@@ -31,7 +31,7 @@ $(get_largest_empty_blk_in_m "$disk") Megabytes."
 
     check_for_p "$disk" xbootldr || maybe_create_xbootldr_p "$disk"
 
-    check_for_p "$disk" root || create_p "$disk" "root" "0" "${GDISK_PART_TYPES[root]}"
+    check_for_p "$disk" root || create_p "$disk" "root" "50G" "2G" "${GDISK_PART_TYPES[root]}"
 }
 
 check_for_p() {
@@ -39,17 +39,18 @@ check_for_p() {
     disk="$1"
     name="$2"
     part="$(get_p_by_type "$disk" "${PART_TYPES[${name}]}")"
-    test ! "$name" = "root" && name="${name@U}"
+    test ! "$name" = "root" && name="${name^^}"
     if [ -n "$part" ]; then
-        msg_bold "${name} partition found on ${disk}, skipping creation..."
-        true
+        msg_bold "
+${name} partition found on ${disk}, skipping creation..."
+        return 0
     else
-        false
+        return 1
     fi
 }
 
 create_efi_p() {
-    create_p "$1" "EFI" "1G" "${GDISK_PART_TYPES[efi]}"
+    create_p "$1" "EFI" "1G" "500M" "${GDISK_PART_TYPES[efi]}"
     get_config_var EFI_PARTITION
     mkfs.fat -F 32 "${config_vars[EFI_PARTITION]}" >/dev/null || exit 1
     msg "EFI system partition formatted."
@@ -58,7 +59,7 @@ create_efi_p() {
 maybe_create_xbootldr_p() {
         explain xbootldr
         if ask_y_n "Would you like to create an XBOOTLDR partition?"; then
-            create_p "$1" "XBOOTLDR" "2G" "${GDISK_PART_TYPES[xbootldr]}"
+            create_p "$1" "XBOOTLDR" "2G" "500M" "${GDISK_PART_TYPES[xbootldr]}"
             get_config_var XBOOTLDR_PARTITION
             mkfs.fat -F 32 "${config_vars[XBOOTLDR_PARTITION]}" >/dev/null || exit 1
             msg "XBOOTLDR system partition formatted."
@@ -255,32 +256,53 @@ get_diff_p() {
     done
 }
 
-create_p() {
-    local disk type default size part start_sec end_sec part
-    declare -a guid
-    declare -A parts
+prompt_p_size() {
+    local disk type default min_secs val secs
     disk=$1
     type=$2
     default=$3
+    min=$4
+    min_secs="$(parse_p_size "${config_vars[INSTALL_DISK]}" "$min")"
+
+    msg "Please provide the desired size for the '$type' partition.
+It should be at least $min."
+    read -rp "  Set size of partition '$type' to (default: $default): " val
+    test -z "$val" && val="$default"
+    secs="$(parse_p_size "${config_vars[INSTALL_DISK]}" "$val")"
+    test ! $? -eq 0 && return 1
+    if [ "$secs" -lt "$min_secs" ]; then
+        msg_bold "This is below the recommended size of $min for this type of partition!"
+        msg "This is likely to cause issues in the following steps and could result in the
+installation failing."
+        ask_y_n "Are you sure you want to continue?" || return 1
+    fi
+
+    if [ "$(get_largest_empty_blk "$disk")" -ge "$secs" ]; then
+        echo -n "$secs"
+    else
+        msg "Disk $disk does not have enough empty space to accomodate a partition of size $val."
+        return 1
+    fi
+}
+
+create_p() {
+    local disk type default min secs part start_sec end_sec part
+    declare -a guid
+    disk=$1
+    type=$2
+    default=$3
+    min=$4
+    test -n "$5" && guid=("-t" "0:$5")
 
     get_config_var INSTALL_DISK
     while true; do
-        read -rp "  Please provide the desired size of partition '$type' (default: $default): " val
-        test -z "$val" && val="$default"
-        size="$(parse_p_size "${config_vars[INSTALL_DISK]}" "$val")"
-        test ! $? -eq 0 && continue
-        if [ "$(get_largest_empty_blk "$disk")" -ge "$size" ]; then
-            break
-        else
-            msg "Disk $disk does not have enough empty space to accomodate a partition of size $val."
-        fi
+        secs="$(prompt_p_size "$disk" "$type" "$default" "$min")" && break
     done
 
     while read -r line; do before+=("$line"); done < <(lsblk -prno NAME "$disk")
 
     start_sec="$(sgdisk -F "$disk")" || exit 1
-    end_sec=$(("$start_sec" + "$size"))
-    test -n "$4" && guid=("-t" "0:$4")
+    end_sec=$(("$start_sec" + "$secs"))
     sgdisk -n 0:"$start_sec":"$end_sec" "$disk" "${guid[@]}" || exit 1
     echo "$type partition created."
 

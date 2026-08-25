@@ -1,6 +1,6 @@
 Partitions created by this script will always use the largest continuous block
 of empty space available.
-If the partition table is heavily fragmented, you should repartition it
+If the partition table is heavily fragmented, you should first repartition it
 manually.
 
 When providing partition sizes, you can either give values ending in G(igabyte),
