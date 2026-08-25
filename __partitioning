@@ -24,8 +24,7 @@ The total size of the largest continuous block of empty space is roughly
 $(get_largest_empty_blk_in_m "$disk") Megabytes."
     pause
 
-    explain create_parts
-    pause
+    explain create_parts && pause
 
     check_for_p "$disk" efi || create_efi_p "$disk"
 

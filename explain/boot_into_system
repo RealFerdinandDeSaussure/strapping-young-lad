@@ -3,3 +3,5 @@ turn the system back on. You will boot into the new system and be prompted for
 your password for the root partition. After entering it, you should be taken to
 the tty login screen where you can login as root. Once logged in as root,
 continue with the next step by running strapping-young-lad/syl.sh 9.
+
+See you there!

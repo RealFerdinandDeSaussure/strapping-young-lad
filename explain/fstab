@@ -11,10 +11,11 @@ execution. If all partitions and subvolumes are properly mounted, no further
 modifications of the fstab file should be necessary.
 
 We will open the fstab file next so you can check if genfstab generated the file
-correctly. As it is usually quite reliable, you do not need to worry if you do
+correctly. As it is usually quite reliable, you don't need to worry if you do
 not understand each option in the file. For a general understanding, see the
-individual columns below. Each row represents a block device whose file system
-will be mounted at boot.
+individual columns below. Note that each row in fstab represents a block device
+whose file system will be mounted at boot.
+fstab makes use of these columns separated by at least one space:
     - 1. file system: identifier for the file system to be mounted; can be
         prefixed by UUID= or LABEL= as an alternative to direct paths
     - 2. dir: path to the mount point of the volume
@@ -22,5 +23,5 @@ will be mounted at boot.
     - 4. options: mount options; mount uses the -o flag for setting these
     - 5. dump: whether dump (a backup utility not overly popular anymore) should
         consider this file system for backups
-    - 6. pass: when a file system check is conducted by fsck at boot, this
+    - 6. pass: when/if a file system check is conducted by fsck at boot, this
         column determines the order in which the file systems are checked

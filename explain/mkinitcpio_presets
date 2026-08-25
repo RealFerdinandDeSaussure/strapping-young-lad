@@ -5,10 +5,11 @@ an installed kernel, allowing configuration on a per-kernel based. Further
 a single preset file.
 
 You can set the path to the generated image file (*_image=) as well as the path
-to the final UKI (*_uki=) in the preset file. The *_options variable also
-allows specifying additional settings that will be passed as parameters to
-mkinitcpio when building the preset. If you know what you are doing, you can
-also override a lot of the default options set in mkinitcpio.conf here.
+to the final UKI (*_uki=) - which packages the image - in the preset file. The
+*_options variable also allows specifying additional settings that will be
+passed as parameters to mkinitcpio when building the preset. If you know what
+you are doing, you can also override a lot of the default options set in
+mkinitcpio.conf here.
 
 In general however, no further editing of the presets should be needed at this
 point. You can comment out the default_options line if you would like to

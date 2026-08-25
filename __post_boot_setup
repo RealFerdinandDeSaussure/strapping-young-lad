@@ -49,7 +49,7 @@ backup_sb_efivars() {
     explain_and_confirm backup_efivars "${bckp_folder}"
 
     for v in PK KEK db dbx; do
-        efi-readvar -v $v -o "$bckp_folder/${v}.esl" || exit 1
+        prexec efi-readvar -v $v -o "$bckp_folder/${v}.esl" || exit 1
     done
 }
 
@@ -63,8 +63,8 @@ create_sb_key() {
 
     prexec openssl req -newkey rsa:4096 -noenc -keyout "${fn}.key" -new -x509 -sha256 -days 3650 -subj "/CN=Personal ${title}/" -out "${fn}.crt" || exit 1
     prexec openssl x509 -outform DER -in "${fn}.crt" -out "${fn}.cer" || exit 1
-    cert-to-efi-sig-list -g "$guid" "${fn}.crt" "${fn}.esl"  || exit 1
-    sign-efi-sig-list -g "$guid" -k "${sign_base}.key" -c "${sign_base}.crt" "${fn}" "${fn}.esl" "${fn}.auth" || exit 1
+    prexec cert-to-efi-sig-list -g "$guid" "${fn}.crt" "${fn}.esl"  || exit 1
+    prexec sign-efi-sig-list -g "$guid" -k "${sign_base}.key" -c "${sign_base}.crt" "${fn}" "${fn}.esl" "${fn}.auth" || exit 1
 }
 
 store_sb_keyset() {
@@ -250,7 +250,7 @@ This should never happen. Check your firmware's Secure Boot implementation."
             backup_sb_efivars
             msg "Secure Boot needs to be in \"Setup Mode\" before we can continue."
             explain setup_mode
-            ask_y_n_secure "Do you wish to reboot into firmware now?" && systemctl reboot --firmware-setup
+            ask_y_n_secure "Do you wish to reboot into firmware now?" && prexec systemctl reboot --firmware-setup
             exit
             ;;
     esac
@@ -266,19 +266,19 @@ This should never happen. Check your firmware's Secure Boot implementation."
     sign_bootloader_ukis
 
     explain secure_boot_finish
-    ask_y_n_secure "Would you like to restart the system now?" && systemctl reboot
+    ask_y_n_secure "Would you like to restart the system now?" && prexec systemctl reboot
     exit
 }
 
 setup_firewall() {
     msg "Installing ufw..."
-    pacman -Sy --needed ufw || exit 1
+    prexec pacman -Sy --needed ufw || exit 1
 
     explain_and_confirm ufw
 
-    ufw default deny incoming
+    prexec ufw default deny incoming
     msg "Enabling ufw..."
-    ufw enable
+    prexec ufw enable
 }
 
 get_secret_device() {

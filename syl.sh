@@ -45,7 +45,7 @@ man_config_vars[XBOOTLDR_PARTITION]="Path to the Linux extended boot loader part
 
 # --- functions
 explain() {
-    test "$QUIET" = "very" && return
+    test "$QUIET" = "very" && return 1
     local explanation_file explanation var
     explanation_file="${SCRIPTDIR}/explain/$1"
     if [ ! -f "$explanation_file" ]; then
@@ -249,11 +249,11 @@ print_write_to_file() {
     file=$2
     content=$3
     
-    print_cmd "$1 the following to ${file}:" >&2
+    print_cmd "${verb} the following to ${file}:" >&2
     while IFS= read -r line; do
         echo "    |$line" >&2
     done <<<"$content"
-    pause
+    test -n "$EXPLANATORY" && pause
 }
 
 # print and write to file
@@ -273,12 +273,9 @@ prwrite() {
     test -z "$QUIET" && print_write_to_file "$mode" "$file" "$content"
     if [ "$mode" = "Appending" ]; then
         echo -n "$content" >> "$file"
-        status=$?
     else
         echo -n "$content" > "$file"
-        status=$?
     fi
-    return $status
 }
 
 pause() {

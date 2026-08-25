@@ -1,5 +1,5 @@
 The options that can be passed to the kernel via the commandline are much too
-numerous to be listed here. Soe here is just an overview of the options we wrote
+numerous to be listed here. So here is just an overview of the options we wrote
 to the cmdline file:%1
     - rootflags: options for mounting the root partition - the btrfs subvolume
           is specified here
@@ -9,8 +9,8 @@ to the cmdline file:%1
 
 The SysRq permssion set through the kernel command line allows executing several
 low level kernel shortcuts by pressing the associated key bindings all using the
-SysRq key. If your keyboard does not have a SysRq key (it most likely has not),
-use the Print key instead. The kernel functions that are made accessible can be
+SysRq key. If your keyboard (like most keyboards) does not have a SysRq key, use
+the Print key instead. The kernel functions that are made accessible can be
 specified by the number that is being passed to the sysrq_always_enable
 parameter. For a full list of options, see the Arch Wiki or the Linux kernel
 documentation on the topic. With our pre-defined value of 224, the following key

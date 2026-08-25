@@ -74,7 +74,7 @@ set_hostname() {
     while true; do
         read -rp "  Please type in a hostname: " hostname
         test -z "$hostname" && continue
-        hostname="$(echo -n "$hostname" | tr -dc '[:alnum:]' | tr '[:upper:]' '[:lower:]')"
+        hostname="$(echo -n "$hostname" | tr -dc '[:alnum:]-' | tr '[:upper:]' '[:lower:]')"
         hostname="${hostname/#-/}"
         hostname="${hostname:0:63}"
         msg "Adapted to adhere to RFC 1178, this is your hostname: $hostname"
@@ -103,12 +103,12 @@ create_netservice() {
     ex=(/mnt/usr/lib/systemd/network/*-"$base".network.example)
     service="$(basename "${ex[0]/%.example/}")"
     achroot ln -vfs "${ex[0]/#\/mnt/}" /etc/systemd/network/"$service" >&2 || exit 1
-    prwrite "$custom" "[Link]
+    echo "[Link]
 Multicast=yes
 RequiredForOnline=routable
 
 [Network]
-MulticastDNS=yes"
+MulticastDNS=yes" > "$custom"
     echo -n "$service"
 }
 
@@ -129,19 +129,19 @@ setup_network() {
     ask_y_n "Would you like to set up wired network access?" && eth_serv="$(create_netservice ethernet "$eth_custom")"
     if achroot pacman -Q iwd >/dev/null 2>&1; then
         wifi_serv="$(create_netservice wifi-station "$wifi_custom")"
-        prwrite -a "$wifi_custom" "IgnoreCarrierLoss=3s"
+        echo "IgnoreCarrierLoss=3s" >> "$wifi_custom"
     fi
 
     test -z "$eth_serv$wifi_serv" && return
 
     if [ -n "$eth_serv" ] && [ -n "$wifi_serv" ]; then
         for c in "$eth_custom" "$wifi_custom"; do
-            prwrite -a "$c" "
+            echo "
 [DHCPv4]
 RouteMetric=100
 
 [IPv6AcceptRA]
-RouteMetric=100"
+RouteMetric=100" >> "$c"
         done
     fi
 
@@ -333,7 +333,7 @@ system table."
 set to UTC for this to work correctly."
     ask_y_n "Would you like to continue?" continue skip && set_time
 
-    msg "Now, locale settings."
+    msg "Now: locale settings."
     ask_y_n "Would you like to continue?" continue skip && set_locales
 
     msg "If you are using a keyboard layout other than the default US one, you can set it

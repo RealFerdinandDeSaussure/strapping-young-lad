@@ -5,7 +5,7 @@ aware of its location and how to unlock it. It must be added to
 crypttab.initramfs, otherwise it will remain locked and boot will fail.
 
 A crypttab file looks similar to an fstab file but is used for unlocking
-volumes, not for mounting them. As with an fstab file, each line represents a
+volumes, not for mounting them. Similar to an fstab file, each line represents a
 volume and consists of four fields:
     - volume-name: the name of the mapping the unlocked volume will take
     - encrypted device: the path to the encrypted volume or its device UUID if

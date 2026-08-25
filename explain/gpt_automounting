@@ -10,5 +10,5 @@ For auto-mounting to work, the following requirements must be met:
     - the boot loader must support systemd-gpt-auto-generator
 
 By following this script, all criteria should be met. Nevertheless, you may
-still opt to not use this feature if you wish. In that case, the root partition
+still opt not to use this feature if you wish. In that case, the root partition
 will be specified explicitly for the kernel on the commandline.
