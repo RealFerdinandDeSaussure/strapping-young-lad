@@ -3,8 +3,8 @@ required to be present on the disk:
     - an EFI system partition
     - a root partition
 
-If either of them does not exist, you can create them interactively by following
-this step.
+If either of these does not exist, you can create them interactively by
+following this step.
 
 A general note on using this script: If you abort the installation process at
 any time, you can restart at a specific step by passing its number to the

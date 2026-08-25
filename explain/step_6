@@ -9,7 +9,7 @@ set up. These include:
     - a root password
 
 You will be prompted for customization options throughout the process. This is a
-rather involved step so it is designed in a more modular way: You will be
-offered to skip each part before it is run. Be careful however, as skipping a
-section entirely will result in an incomplete and possibly non-functional
-system.
+rather involved step so it is designed in a more modular way: You will be given
+the chance to skip each part before it is run. If anything goes wrong, you can
+skip previously completed parts. Be careful however, as skipping a section
+entirely will result in an incomplete and possibly non-functional system.

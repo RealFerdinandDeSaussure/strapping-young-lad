@@ -12,4 +12,4 @@ EFI system partition was created by Windows.
 
 The XBOOTLDR partition can have any file system that your UEFI implementation
 can read. For compatibility reasons, this script will nevertheless always format
-the partition with FAT32.
+the partition as FAT32.

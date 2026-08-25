@@ -6,7 +6,7 @@ respective mount points (non-existing mount points will be created dynamically):
     - @snp subvolume: /mnt/snp
     - %1
 
-While the @snp subvolume has no use for installing Arch Linux, mounting it now
-means that the genfstab script will be able to pick it up and write its
-mount point to /etc/fstab. This way, the subvolume will be mounted by default on
+While the @snp subvolume has no relevance for installing Arch Linux, mounting it
+now means that Arch's genfstab script will be able to pick it up and write its
+mount point to /etc/fstab. This way, the subvolume will be mounted by default at
 system boot.

@@ -1,11 +1,24 @@
 #!/bin/bash
 
-if [ "$1" = "-q" ]; then
-    QUIET=yes
-    shift
-fi
+for f in "$@"; do
+    case "${f:0:2}" in
+        "-q")
+            QUIET=yes
+            test "$f" = "-qq" && QUIET=very
+            shift
+            ;;
+        "-x")
+            EXPLANATORY=yes
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
 
 SCRIPTDIR="$(dirname -- "$(readlink -f -- "$0")")"
+SCRIPTREPO="https://github.com/RealFerdinandDeSaussure/strapping-young-lad" 
 STEPS=12
 STEP=$1
 
@@ -32,7 +45,7 @@ man_config_vars[XBOOTLDR_PARTITION]="Path to the Linux extended boot loader part
 
 # --- functions
 explain() {
-    test -n "$QUIET" && return
+    test "$QUIET" = "very" && return
     local explanation_file explanation var
     explanation_file="${SCRIPTDIR}/explain/$1"
     if [ ! -f "$explanation_file" ]; then
@@ -52,11 +65,11 @@ explain() {
 }
 
 explain_and_confirm() {
-    if [ -z "$QUIET" ]; then
+    if [ "$QUIET" = "very" ]; then
+        return 1
+     else
         explain "$@"
         pause
-    else
-        return 1
     fi
 }
 
@@ -209,6 +222,64 @@ edit_file() {
         ask_y_n "Would you like to continue? (Replying No will reopen the file. Press Ctrl-C to exit.)" && break
     done
 }
+ 
+print_cmd() {
+    msg_bold -ne "  \033[32m->\033[37m " >&2
+    printf "%s\n" "$1" >&2
+}
+
+# print and exec
+prexec() {
+    local status
+    if [ -n "$QUIET" ]; then
+        "$@"
+        status=$?
+    else
+        print_cmd "$*"
+        "$@"
+        status=$?
+        test -n "$EXPLANATORY" && pause
+    fi
+    return $status
+}
+
+print_write_to_file() {
+    local file content
+    verb=$1
+    file=$2
+    content=$3
+    
+    print_cmd "$1 the following to ${file}:" >&2
+    while IFS= read -r line; do
+        echo "    |$line" >&2
+    done <<<"$content"
+    pause
+}
+
+# print and write to file
+prwrite() {
+    local file content mode status
+
+    if [ "$1" = "-a" ]; then
+        mode="Appending"
+        shift
+    else
+        mode="Writing"
+    fi
+
+    file=$1
+    content=$2
+
+    test -z "$QUIET" && print_write_to_file "$mode" "$file" "$content"
+    if [ "$mode" = "Appending" ]; then
+        echo -n "$content" >> "$file"
+        status=$?
+    else
+        echo -n "$content" > "$file"
+        status=$?
+    fi
+    return $status
+}
 
 pause() {
     read -n1 -srp "  Press any key to continue."
@@ -229,14 +300,12 @@ test_root() {
 test_uefi() {
     local fw_platform_size
     echo -n "Are we in UEFI mode? "
-    # debug: will commenting the following line out get rid of bash language server crashing?
     fw_platform_size=$(cat /sys/firmware/efi/fw_platform_size)
     if [[ "$fw_platform_size" = "64" ]]; then
         msg_bold "Yes."
         return
     else
         msg_bold "No."
-        # msg "\`cat /sys/firmware/efi/fw_platform_size\` ergab: $fw_platform_size"
         return 1
     fi
 }
@@ -354,7 +423,7 @@ get_largest_empty_blk_in_m() {
 prompt_for_extra_pkgs() {
     declare -a pkgs
     msg "Please answer the following questions. The package that will be installed if you
-answer 'Yes' is given in parentheses for each question."
+answer 'Yes' is given in parentheses behind each question."
 
     for cpu in amd intel; do
         if ask_y_n "Does your computer run on an ${cpu^} CPU ($cpu-ucode)?"; then
@@ -413,7 +482,7 @@ bootstrap() {
 
     msg "\nBootstrapping a base system with the following packages: base $kernel linux-firmware ${pkgs[*]}..."
 
-    pacstrap -K /mnt base linux-firmware "$kernel" "${pkgs[@]}" || exit 1
+    prexec pacstrap -K /mnt base linux-firmware "$kernel" "${pkgs[@]}" || exit 1
 }
 
 pageshow() {
@@ -479,11 +548,11 @@ mount_system() {
 
     if [ -n "$xbootldr" ]; then
         msg "Mounting EFI system and XBOOTLDR partitions..."
-        mount --mkdir -o fmask=0077,dmask=0077 "$efi" /mnt/efi
-        mount --mkdir -o fmask=0077,dmask=0077 "$xbootldr" /mnt/boot
+        prexec mount --mkdir -o fmask=0077,dmask=0077 "$efi" /mnt/efi
+        prexec mount --mkdir -o fmask=0077,dmask=0077 "$xbootldr" /mnt/boot
     else
         msg "Mounting EFI system partition..."
-        mount --mkdir -o fmask=0077,dmask=0077 "$efi" /mnt/boot
+        prexec mount --mkdir -o fmask=0077,dmask=0077 "$efi" /mnt/boot
     fi
 }
 
@@ -527,14 +596,14 @@ prepare_for_reboot() {
     test_system_mounted || exit 1
     msg "For this, we will need git on the live medium. It is probably already installed
 but let's make sure."
-    pacman -Sy --needed git
+    prexec pacman -Sy --needed git
 
     msg "Cloning to new system..."
-    git clone "https://github.com/Pu-Anlai/strapping-young-lad" /mnt/root/strapping-young-lad
+    prexec git clone "$SCRIPTREPO" /mnt/root/strapping-young-lad
 
     msg "Unmounting the system from /mnt..."
-    swapoff -a
-    umount -R /mnt
+    prexec swapoff -a
+    prexec umount -R /mnt
 
     msg "This concludes the installation process from the live medium."
     explain boot_into_system
@@ -651,7 +720,10 @@ That will start the portion of the script that is intended for the new system."
     test_uefi || exit 1
     test_internet || exit 1
 
-    msg "(Replies to prompts in this script do not need to be written out completely.)"
+    msg "Two notes on using this script:
+ - replies to prompts may be entered partially ('y' instead of 'yes')
+ - install commands executed by the script will be printed out prefixed by a
+   green arrow (unless -q was passed)"
 
     for s in $(seq "$STEP" "$STEPS"); do
         step "$s"

@@ -3,8 +3,8 @@ partitions on a system should ideally be encrypted. The exception is the boot
 partition (including the XBOOTLDR partition if you are using one) because the
 UEFI firmware cannot read an encrypted EFI system partition. While GRUB does
 support reading from an encrypted boot partition, this approach is generally
-discouraged as increases complexity and is more difficult to maintain. For this
-reason, we will only encrypt our root partition.
+discouraged as it increases complexity and is more difficult to maintain. For
+this reason, we will only encrypt our root partition.
 
 Afterwards, the root partition will be unlocked so it can be used in the next
 steps.

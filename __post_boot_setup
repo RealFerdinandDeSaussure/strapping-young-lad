@@ -43,7 +43,7 @@ backup_sb_efivars() {
     mkdir -p "$bckp_folder"
 
     explain_and_confirm secure_boot
-    pacman -Sy --needed efitools sbsigntools systemd-ukify || exit 1
+    prexec pacman -Sy --needed efitools sbsigntools systemd-ukify || exit 1
 
     msg "Backing up Secure Boot efivars..."
     explain_and_confirm backup_efivars "${bckp_folder}"
@@ -61,8 +61,8 @@ create_sb_key() {
     title="$4"
     msg "Creating ${title} (${fn})..."
 
-    openssl req -newkey rsa:4096 -noenc -keyout "${fn}.key" -new -x509 -sha256 -days 3650 -subj "/CN=Personal ${title}/" -out "${fn}.crt" || exit 1
-    openssl x509 -outform DER -in "${fn}.crt" -out "${fn}.cer" || exit 1
+    prexec openssl req -newkey rsa:4096 -noenc -keyout "${fn}.key" -new -x509 -sha256 -days 3650 -subj "/CN=Personal ${title}/" -out "${fn}.crt" || exit 1
+    prexec openssl x509 -outform DER -in "${fn}.crt" -out "${fn}.cer" || exit 1
     cert-to-efi-sig-list -g "$guid" "${fn}.crt" "${fn}.esl"  || exit 1
     sign-efi-sig-list -g "$guid" -k "${sign_base}.key" -c "${sign_base}.crt" "${fn}" "${fn}.esl" "${fn}.auth" || exit 1
 }
@@ -72,8 +72,8 @@ store_sb_keyset() {
     sb_tmp_dir="$1"
     sb_dir="$HOME/sb-keys"
     msg "Storing generated keys in ${sb_dir}..."
-    mkdir -p "${sb_dir}"
-    cp -v "$sb_tmp_dir"/* "${sb_dir}"
+    prexec mkdir -p "${sb_dir}"
+    prexec cp -v "$sb_tmp_dir"/* "${sb_dir}"
     echo "These keys are used for secure boot signing! Do not delete them!" > "${sb_dir}"/DO_NOT_DELETE
 }
 
@@ -87,7 +87,7 @@ create_sb_keyset() {
     explain_and_confirm create_sb_keyset
 
     create_sb_key "$guid" "PK" "PK" "Platform Key"
-    sign-efi-sig-list -g "$guid" -c PK.crt -k PK.key PK /dev/null noPK.auth || exit 1
+    prexec sign-efi-sig-list -g "$guid" -c PK.crt -k PK.key PK /dev/null noPK.auth || exit 1
     create_sb_key "$guid" "KEK" "PK" "Key Exchange Key"
     create_sb_key "$guid" "db" "KEK" "Signature Database Key"
 
@@ -95,7 +95,7 @@ create_sb_keyset() {
 }
 
 ms_sign() {
-    sbsiglist --owner "$MS_GUID" --type x509 --output "$2" "$1" || exit 1
+    prexec sbsiglist --owner "$MS_GUID" --type x509 --output "$2" "$1" || exit 1
 }
 
 download_from_ms() {
@@ -103,7 +103,7 @@ download_from_ms() {
     url="$1"
     fn="$(basename "$url")"
     fn="$(printf "%b" "${fn//%/\\x}")"
-    curl -Lo "$fn" "$url"
+    prexec curl -Lo "$fn" "$url"
 }
 
 create_ms_db() {
@@ -135,8 +135,8 @@ create_ms_db() {
     cat "MS_Win_db_2011.esl" "MS_Win_db_2023.esl" "MS_UEFI_db_2011.esl" "MS_UEFI_db_2023.esl" > MS_db.esl
     cat "MS_Win_KEK_2011.esl" "MS_Win_KEK_2023.esl" > MS_Win_KEK.esl
 
-    sign-efi-sig-list -a -g "$MS_GUID" -k "$personal_key_dir"/KEK.key -c "$personal_key_dir"/KEK.crt db MS_db.esl add_MS_db.auth || exit 1
-    sign-efi-sig-list -a -g "$MS_GUID" -k "$personal_key_dir"/PK.key -c "$personal_key_dir"/PK.crt KEK MS_Win_KEK.esl add_MS_Win_KEK.auth || exit 1
+    prexec sign-efi-sig-list -a -g "$MS_GUID" -k "$personal_key_dir"/KEK.key -c "$personal_key_dir"/KEK.crt db MS_db.esl add_MS_db.auth || exit 1
+    prexec sign-efi-sig-list -a -g "$MS_GUID" -k "$personal_key_dir"/PK.key -c "$personal_key_dir"/PK.crt KEK MS_Win_KEK.esl add_MS_Win_KEK.auth || exit 1
 
     cd "$cwd" || exit 1
 }
@@ -161,19 +161,19 @@ enroll_keys() {
     msg "Copying keys to $sbsign_dir..."
     for i in db dbx KEK PK; do
         keys=({"$sb_dir","$ms_dir"}/*"${i}.auth")
-        mkdir -p "${sbsign_dir}/${i}"
+        prexec mkdir -p "${sbsign_dir}/${i}"
         test ${#keys[@]} -eq 0 && continue  # for dbx
-        cp -v "${keys[@]}" "${sbsign_dir}/${i}" || exit 1
+        prexec cp -v "${keys[@]}" "${sbsign_dir}/${i}" || exit 1
     done
 
     explain_and_confirm enroll_keys "${sbsign_dir}"
 
     for k in /sys/firmware/efi/efivars/{PK,KEK,db}*; do
-        chattr -i "$k"
+        prexec chattr -i "$k"
     done
-    sbkeysync --keystore "$sbsign_dir" || signing_fail
+    prexec sbkeysync --keystore "$sbsign_dir" || signing_fail
     msg "Key Exchange Keys and Database enrolled."
-    efi-updatevar -f "${sbsign_dir}/PK/PK.auth" PK || signing_fail
+    prexec efi-updatevar -f "${sbsign_dir}/PK/PK.auth" PK || signing_fail
     msg "Platform Key enrolled."
 
     shopt -u nullglob
@@ -182,10 +182,10 @@ enroll_keys() {
 create_pacman_sb_hook() {
     local hook_dir
     hook_dir=/etc/pacman.d/hooks
-    mkdir -p "$hook_dir" || exit 1
+    prexec mkdir -p "$hook_dir" || exit 1
 
     # shellcheck disable=2016
-    echo '[Trigger]
+    prwrite "${hook_dir}/80-secureboot.hook" '[Trigger]
 Operation = Install
 Operation = Upgrade
 Type = Path
@@ -196,7 +196,7 @@ Description = Signing systemd-boot for Secure Boot...
 When = PostTransaction
 Exec = /bin/sh -c '\''while read -r f; do /usr/lib/systemd/systemd-sbsign sign --private-key /root/sb-keys/db.key --certificate /root/sb-keys/db.crt --output "${f}.signed" "$f" >/dev/null ; done;'\''
 Depends = sh
-NeedsTargets' > "${hook_dir}/80-secureboot.hook"
+NeedsTargets'
 }
 
 set_sb_signing_in_uki_conf() {
@@ -204,7 +204,7 @@ set_sb_signing_in_uki_conf() {
     conf=/etc/kernel/uki.conf
     touch "$conf" || exit 1
 
-    grep -qF "[UKI]" "$conf" || echo -e "[UKI]\n" >> "$conf"
+    grep -qF "[UKI]" "$conf" || prwrite -a "$conf" "[UKI]"
     add_to_conf "$conf" "SecureBootCertificate=/root/sb-keys/db.crt" UKI
     add_to_conf "$conf" "SecureBootPrivateKey=/root/sb-keys/db.key" UKI
     add_to_conf "$conf" "SecureBootSigningTool=systemd-sbsign" UKI
@@ -334,9 +334,9 @@ enroll_tpm() {
     edit_file "$uki_conf"
 
     msg "Rebuilding UKI(s)..."
-    mkinitcpio -P || exit 1
+    prexec mkinitcpio -P || exit 1
     msg "Enrolling TPM2 policy..."
-    systemd-cryptenroll --wipe-slot tpm2 --tpm2-device "$device" --tpm2-pcrs="" --tpm2-with-pin=yes "$part" || exit 1
+    prexec systemd-cryptenroll --wipe-slot tpm2 --tpm2-device "$device" --tpm2-pcrs="" --tpm2-with-pin=yes "$part" || exit 1
 }
 
 enroll_fido2() {
@@ -357,7 +357,7 @@ enroll_fido2() {
     ask_y_n "Would you like to use user verification when using this token?" && verification=yes
 
     msg "Enrolling FIDO2 token..."
-    systemd-cryptenroll --fido2-device="${device}" "--fido2-with-client-pin=${pin}" "--fido2-with-user-presence=${presence}" "--fido2-with-user-verification=${verification}" "$part" || exit 1
+    prexec systemd-cryptenroll --fido2-device="${device}" "--fido2-with-client-pin=${pin}" "--fido2-with-user-presence=${presence}" "--fido2-with-user-verification=${verification}" "$part" || exit 1
 }
 
 enroll_pkcs11() {
@@ -370,7 +370,7 @@ enroll_pkcs11() {
     fi
 
     msg "Enrolling PKCS#11 token..."
-    systemd-cryptenroll --pkcs11-token-uri="$device" "$part"
+    prexec systemd-cryptenroll --pkcs11-token-uri="$device" "$part"
 }
 
 clear_secrets() {
@@ -382,7 +382,7 @@ clear_secrets() {
     if ! systemd-cryptenroll "$part" | grep -Fq "recovery"; then
         explain recovery "$recovery"
         if ask_y_n "Would you like to enroll recovery keys?"; then
-            systemd-cryptenroll --recovery-key "$part" 2>/dev/null | tee "$recovery" || exit 1
+            prexec systemd-cryptenroll --recovery-key "$part" 2>/dev/null | tee "$recovery" || exit 1
             msg "The recovery key shown above was enrolled and written to ${recovery}."
             msg_bold "Store it safely offline outside of the encrypted partition and delete
 ${recovery}!"
@@ -510,7 +510,7 @@ different method."
 
     edit_file /etc/crypttab.initramfs
     msg "Rebuilding UKI(s)..."
-    mkinitcpio -P || exit 1
+    prexec mkinitcpio -P || exit 1
 }
 
 finalize_luks() {
@@ -524,7 +524,7 @@ finalize_luks() {
 
     explain luksheader_backup
     if ask_y_n "Would you like to create a backup of the LUKS header?"; then
-        cryptsetup luksHeaderBackup "${config_vars[ROOT_PARTITION]}" --header-backup-file "$header_bckp" || exit 1
+        prexec cryptsetup luksHeaderBackup "${config_vars[ROOT_PARTITION]}" --header-backup-file "$header_bckp" || exit 1
         msg "Header backup saved at ${header_bckp}."
         msg_bold "Copy it to a safe, offline location outside of the encrypted partition and
 remove ${header_bckp}!"

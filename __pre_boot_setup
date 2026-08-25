@@ -2,7 +2,7 @@
 # shellcheck source=SCRIPTDIR/syl.sh
 
 achroot() {
-    arch-chroot /mnt "$@"
+    prexec arch-chroot /mnt "$@"
 }
 
 set_time() {
@@ -56,7 +56,7 @@ Only UTF-8 locales are supported by this script."
         fi
     done
     for l in "${locales[@]}"; do
-        sed -ri 's/^#('"$l"')/\1/' /mnt/etc/locale.gen
+        prexec sed -ri 's/^#('"$l"')/\1/' /mnt/etc/locale.gen
     done
     achroot locale-gen || exit 1
 
@@ -80,7 +80,7 @@ set_hostname() {
         msg "Adapted to adhere to RFC 1178, this is your hostname: $hostname"
         ask_y_n "Would you like to continue with this name?" && break
     done
-    echo "$hostname" > /mnt/etc/hostname || exit 1
+    prwrite /mnt/etc/hostname "$hostname" || exit 1
 }
 
 set_vcons_kl() {
@@ -90,7 +90,7 @@ set_vcons_kl() {
     done < <(localectl list-keymaps)
 
     tab_display "${layouts[@]}"
-    echo "KEYMAP=$(select_item "${layouts[@]}" | xargs)" > /mnt/etc/vconsole.conf || exit 1
+    prwrite /mnt/etc/vconsole.conf "KEYMAP=$(select_item "${layouts[@]}" | xargs)" || exit 1
 }
 
 create_netservice() {
@@ -103,21 +103,21 @@ create_netservice() {
     ex=(/mnt/usr/lib/systemd/network/*-"$base".network.example)
     service="$(basename "${ex[0]/%.example/}")"
     achroot ln -vfs "${ex[0]/#\/mnt/}" /etc/systemd/network/"$service" >&2 || exit 1
-    echo "[Link]
+    prwrite "$custom" "[Link]
 Multicast=yes
 RequiredForOnline=routable
 
 [Network]
-MulticastDNS=yes" > "$custom"
+MulticastDNS=yes"
     echo -n "$service"
 }
 
 create_net_dropin() {
     local dropin_folder
     dropin_folder=/mnt/etc/systemd/network/"$1".d
-    mkdir -p "$dropin_folder"
+    prexec mkdir -p "$dropin_folder"
     # sytemd-networkd requires these files to have 644 umask
-    install -m 644 "$2" "$dropin_folder"/10-custom.conf
+    prexec install -m 644 "$2" "$dropin_folder"/10-custom.conf
 }
 
 setup_network() {
@@ -129,18 +129,19 @@ setup_network() {
     ask_y_n "Would you like to set up wired network access?" && eth_serv="$(create_netservice ethernet "$eth_custom")"
     if achroot pacman -Q iwd >/dev/null 2>&1; then
         wifi_serv="$(create_netservice wifi-station "$wifi_custom")"
-        echo "IgnoreCarrierLoss=3s" >> "$wifi_custom"
+        prwrite -a "$wifi_custom" "IgnoreCarrierLoss=3s"
     fi
 
     test -z "$eth_serv$wifi_serv" && return
 
     if [ -n "$eth_serv" ] && [ -n "$wifi_serv" ]; then
         for c in "$eth_custom" "$wifi_custom"; do
-            echo -e "\n[DHCPv4]
+            prwrite -a "$c" "
+[DHCPv4]
 RouteMetric=100
 
 [IPv6AcceptRA]
-RouteMetric=100 " >> "$c"
+RouteMetric=100"
         done
     fi
 
@@ -160,9 +161,9 @@ RouteMetric=100 " >> "$c"
     if achroot pacman -Q dnscrypt-proxy >/dev/null 2>&1; then
         msg "Setting up dnscrypt-proxy for local DNS resolving..."
         sed -ri 's/^listen_addresses.+$/listen_addresses = ['\''127.0.0.1:53'\'', '\''[::1]:53'\'']/' /mnt/etc/dnscrypt-proxy/dnscrypt-proxy.toml
-        echo "nameserver ::1
+        prwrite -a /mnt/etc/resolv.conf "nameserver ::1
 nameserver 127.0.0.1
-options edns0" >> /mnt/etc/resolv.conf
+options edns0"
         achroot systemctl enable dnscrypt-proxy.service || exit 1
     fi
 
@@ -214,13 +215,13 @@ create_btrfs_swap() {
     get_config_var ROOT_ENCRYPTED_NAME
 
     msg "Creating and mounting @swap subvolume..."
-    mount --mkdir /dev/mapper/"${config_vars[ROOT_ENCRYPTED_NAME]}" "$rootmnt" || exit 1
-    btrfs subvolume create "$rootmnt/@swap" || exit 1
-    umount "$rootmnt" || exit 1
+    prexec mount --mkdir /dev/mapper/"${config_vars[ROOT_ENCRYPTED_NAME]}" "$rootmnt" || exit 1
+    prexec btrfs subvolume create "$rootmnt/@swap" || exit 1
+    prexec umount "$rootmnt" || exit 1
     mount_subvol /dev/mapper/"${config_vars[ROOT_ENCRYPTED_NAME]}" @swap /mnt/swap || exit 1
 
     msg "Creating swap file..."
-    btrfs filesystem mkswapfile --size "$size" --uuid clear /mnt/swap/swapfile || exit 1
+    prexec btrfs filesystem mkswapfile --size "$size" --uuid clear /mnt/swap/swapfile || exit 1
 }
 
 create_swap() {
@@ -233,13 +234,13 @@ create_swap() {
 
     if [ ! -f "$swapfile" ] && [ ! "$fs" = "btrfs" ]; then
         msg "Creating swap file..."
-        mkswap -U clear --size "$size" --file "$swapfile" || exit 1
+        prexec mkswap -U clear --size "$size" --file "$swapfile" || exit 1
     elif [ ! -f "$swapfile" ]; then
         create_btrfs_swap "$size"
     fi
 
     msg "Mounting swap file..."
-    swapon "$swapfile" || exit 1
+    prexec swapon "$swapfile" || exit 1
 }
 
 create_zram() {
@@ -322,8 +323,8 @@ prepare_system() {
     msg "With all partitions mounted and a swap file created, we can generate the file
 system table."
     if ask_y_n "Would you like to continue?" continue skip; then
+        prexec genfstab -U /mnt >> /mnt/etc/fstab || exit 1
         msg "Editing /etc/fstab..."
-        genfstab -U /mnt >> /mnt/etc/fstab || exit 1
         explain_and_confirm fstab || pause
         edit_file /mnt/etc/fstab
     fi
@@ -375,7 +376,7 @@ adapt_hooks() {
 
     ask_y_n "Will you be using a non-standard keymap or console font?" && sdv_hook="sd-vconsole"
 
-    if achroot pacman -Qqs -- '-ucode$' >/dev/null 2>&1; then
+    if QUIET=yes achroot pacman -Qqs -- '-ucode$' >/dev/null 2>&1; then
         hooks="$(add_hook "$hooks" microcode modconf)"
     fi
 

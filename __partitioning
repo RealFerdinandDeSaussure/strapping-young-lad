@@ -52,7 +52,7 @@ ${name} partition found on ${disk}, skipping creation..."
 create_efi_p() {
     create_p "$1" "EFI" "1G" "500M" "${GDISK_PART_TYPES[efi]}"
     get_config_var EFI_PARTITION
-    mkfs.fat -F 32 "${config_vars[EFI_PARTITION]}" >/dev/null || exit 1
+    prexec mkfs.fat -F 32 "${config_vars[EFI_PARTITION]}" >/dev/null || exit 1
     msg "EFI system partition formatted."
 }
 
@@ -61,7 +61,7 @@ maybe_create_xbootldr_p() {
         if ask_y_n "Would you like to create an XBOOTLDR partition?"; then
             create_p "$1" "XBOOTLDR" "2G" "500M" "${GDISK_PART_TYPES[xbootldr]}"
             get_config_var XBOOTLDR_PARTITION
-            mkfs.fat -F 32 "${config_vars[XBOOTLDR_PARTITION]}" >/dev/null || exit 1
+            prexec mkfs.fat -F 32 "${config_vars[XBOOTLDR_PARTITION]}" >/dev/null || exit 1
             msg "XBOOTLDR system partition formatted."
         fi
 }
@@ -109,7 +109,7 @@ setup_parts() {
         "")
             msg_bold "No."
             if ask_y_n "Would you like to create one?"; then
-                if ! parted "$choice" mklabel gpt >/dev/null 2>&1; then
+                if ! prexec parted "$choice" mklabel gpt >/dev/null 2>&1; then
                     msg "There was an error creating the GPT."
                     exit 1
                 else
@@ -158,9 +158,9 @@ encrypt_p() {
 THIS WILL IRREVOCABLY DESTROY ALL DATA ON $part."
     ask_y_n_secure "Are you sure you want to continue?" || exit 1
 
-    (printf "%s" "$pw" | cryptsetup luksFormat --key-file - "$part") || exit 1
+    (printf "%s" "$pw" | prexec cryptsetup luksFormat --key-file - "$part") || exit 1
     msg "Mapping unlocked partition $part to $crypt_part..."
-    (printf "%s" "$pw" | cryptsetup open --key-file - "$part" "$crypt_part") || exit 1
+    (printf "%s" "$pw" | prexec cryptsetup open --key-file - "$part" "$crypt_part") || exit 1
 }
 
 get_lowest_part_num() {
@@ -303,7 +303,7 @@ create_p() {
 
     start_sec="$(sgdisk -F "$disk")" || exit 1
     end_sec=$(("$start_sec" + "$secs"))
-    sgdisk -n 0:"$start_sec":"$end_sec" "$disk" "${guid[@]}" || exit 1
+    prexec sgdisk -n 0:"$start_sec":"$end_sec" "$disk" "${guid[@]}" || exit 1
     echo "$type partition created."
 
     while read -r line; do after+=("$line"); done < <(lsblk -prno NAME "$disk")
