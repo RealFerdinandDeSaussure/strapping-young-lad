@@ -462,8 +462,8 @@ bootstrap() {
 
     explain common_packages
     while true; do
-        read -rp "  Please enter additional packages separated by commas here (default: none): " choice
-        IFS=, read -ra choice <<< "$choice"
+        read -rp "  Please enter additional packages separated by spaces here (default: none): " choice
+        read -ra choice <<< "$choice"
         read -ra no_pkgs < <(get_missing_pkgs "${choice[*]}")
         if [ "${#no_pkgs[@]}" -eq 0 ]; then
             pkgs+=("${choice[@]}")

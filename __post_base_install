@@ -163,11 +163,11 @@ setup_pipewire() {
     test ${#users[@]} -eq 0 && return
 
     msg "PipeWire can be enabled on a per-user basis. Please give a list of users
-(separated by commas) for whom you would like to enable PipeWire."
+(separated by spaces) for whom you would like to enable PipeWire."
     while true; do
         tab_display "${users[@]}"
         read -rp "  For which users should PipeWire be enabled? " answer
-        IFS=, read -ra choice <<< "$answer"
+        read -ra choice <<< "$answer"
         for u in "${choice[@]}"; do
             test -d /home/"$u" && continue
             msg "User $u does not exist."
