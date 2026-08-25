@@ -15,7 +15,15 @@ reimplementation of the established original sudo, one of its goals is to
 simplify and modernize the code base. Therefore, only a subset of the original
 sudo's feature set is implemented.
 
-If you decide to install one of these programs, you can then set up rules to
+When using doas, please keep in mind that a lot of the standard Arch Linux tools
+still depend on the sudo command being available. sudo is part of base-devel and
+therefore required for all user-built packages. If you want to completely
+replace sudo with doas, additional steps are required. You would need to provide
+a wrapper that translates sudo parameters into their doas equivalents (if they
+exist). The AUR provides a user package for this purpose called
+"doas-sudo-shim", which should serve as a good starting point.
+
+If you decide to install either of these programs, you can then set up rules to
 allow users belonging to a specific group to gain super-user privileges when
 they invoke the program. This group is named "wheel" by convention so this is
 also the name we will use in this script.
