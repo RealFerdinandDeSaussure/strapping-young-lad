@@ -144,8 +144,8 @@ create_ms_db() {
 signing_fail() {
     msg "Enrolling was not succesful. This is often because the firmware has locked
     access to EFI variables. You can sometimes circumvent this be setting or
-    resetting the firmware password. After doing so, try running syl.sh 10
-    again."
+    resetting the firmware password. After doing so, try running \"$0 10\" or
+    \"$0 secureboot\" again."
 
     exit 1
 }
@@ -249,7 +249,7 @@ This should never happen. Check your firmware's Secure Boot implementation."
         *)
             backup_sb_efivars
             msg "Secure Boot needs to be in \"Setup Mode\" before we can continue."
-            explain setup_mode
+            explain setup_mode "$0"
             ask_y_n_secure "Do you wish to reboot into firmware now?" && prexec systemctl reboot --firmware-setup
             exit
             ;;
@@ -265,7 +265,7 @@ This should never happen. Check your firmware's Secure Boot implementation."
     explain_and_confirm post_enrollment
     sign_bootloader_ukis
 
-    explain secure_boot_finish
+    explain secure_boot_finish "$0"
     ask_y_n_secure "Would you like to restart the system now?" && prexec systemctl reboot
     exit
 }

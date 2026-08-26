@@ -492,7 +492,7 @@ but let's make sure."
     prexec umount -R /mnt
 
     msg "This concludes the installation process from the live medium."
-    explain boot_into_system
+    explain boot_into_system "$0"
     exit 0
 }
 

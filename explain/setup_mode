@@ -15,6 +15,6 @@ We will populate all Secure Boot variables, so if your motherboard has no
 option for just deleting the Platform Key, deleting all Secure Boot
 variables/keys is also fine.
 
-After rebooting, run ./syl.sh 10 to re-run the current step. To boot directly
+After rebooting, run "%1 10" or "%1 secureboot" to re-run the current step. To boot directly
 into the firmware, you can run:
 systemctl reboot --firmware-setup
