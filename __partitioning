@@ -321,3 +321,14 @@ test_p() {
         return 0
     fi
 }
+
+get_largest_empty_blk() {
+    local start end
+    start=$(sgdisk -F "$1") || exit 1
+    end=$(sgdisk -E "$1") || exit 1
+    echo -n "$(("$end" - "$start"))"
+}
+
+get_largest_empty_blk_in_m() {
+    echo -n "$(($(get_largest_empty_blk "$1") * 512 / 1000000))"
+}

@@ -18,11 +18,10 @@ for f in "$@"; do
 done
 
 SCRIPTDIR="$(dirname -- "$(readlink -f -- "$0")")"
-SCRIPTREPO="https://github.com/RealFerdinandDeSaussure/strapping-young-lad" 
-STEPS=12
 STEP=$1
 
 # shellcheck source-path=SCRIPTDIR
+source "${SCRIPTDIR}/__vars"
 source "${SCRIPTDIR}/__btrfs"
 source "${SCRIPTDIR}/__partitioning"
 source "${SCRIPTDIR}/__post_boot_setup"
@@ -30,18 +29,6 @@ source "${SCRIPTDIR}/__pre_boot_setup"
 source "${SCRIPTDIR}/__post_base_install"
 
 set -o pipefail
-
-declare -A config_vars
-declare -A man_config_vars
-
-man_config_vars[INSTALL_DISK]="Path to the block device that holds or should hold partitions for the
-installation."
-man_config_vars[ROOT_ENCRYPTED_NAME]="Name of the mapping for the unlocked encrypted root partition."
-man_config_vars[GPT_AUTOMOUNT]="Whether the root partition should be mounted automatically by systemd
-(0=no,1=yes)."
-man_config_vars[ROOT_PARTITION]="Path to the partition that should hold the root file system."
-man_config_vars[EFI_PARTITION]="Path to the EFI system partition."
-man_config_vars[XBOOTLDR_PARTITION]="Path to the Linux extended boot loader partition."
 
 # --- functions
 explain() {
@@ -70,101 +57,6 @@ explain_and_confirm() {
      else
         explain "$@"
         pause
-    fi
-}
-
-get_config_var_efi_partition() {
-    get_config_var INSTALL_DISK
-    config_vars[EFI_PARTITION]="$(get_p "${config_vars[INSTALL_DISK]}" efi)"
-    test -z "${config_vars[EFI_PARTITION]}" && { msg "No EFI partition found."; exit 1; }
-}
-
-val_config_var_efi_partition() {
-    test "$(lsblk -o PARTTYPE "${config_vars[EFI_PARTITION]}")" = "${PART_TYPES[efi]}"
-}
-
-get_config_var_root_partition() {
-    get_config_var INSTALL_DISK
-    config_vars[ROOT_PARTITION]="$(get_p "${config_vars[INSTALL_DISK]}" root)"
-    test -z "${config_vars[ROOT_PARTITION]}" && { msg "No root partition found."; exit 1; }
-}
-
-val_config_var_root_partition() {
-    test "$(lsblk -o PARTTYPE "${config_vars[ROOT_PARTITION]}")" = "${PART_TYPES[root]}"
-}
-
-get_config_var_xbootldr_partition() {
-    get_config_var INSTALL_DISK
-    config_vars[XBOOTLDR_PARTITION]="$(get_p "${config_vars[INSTALL_DISK]}" xbootldr)"
-}
-
-val_config_var_xbootldr_partition() {
-    test "$(lsblk -o PARTTYPE "${config_vars[XBOOTLDR_PARTITION]}")" = "${PART_TYPES[xbootldr]}"
-}
-
-get_config_var_root_encrypted_name() {
-    local crypt_name
-    get_config_var ROOT_PARTITION
-
-    for map in /dev/mapper/*; do
-        cryptsetup status "$map" | grep -q "device:\s*${config_vars[ROOT_PARTITION]}" || continue
-        crypt_name="$map"
-        break
-    done
-    config_vars[ROOT_ENCRYPTED_NAME]="$(basename "$crypt_name")"
-}
-
-val_config_var_root_encrypted_name() {
-    test -b "${config_vars[ROOT_ENCRYPTED_NAME]}"
-}
-
-get_config_var_gpt_automount() {
-    test_on_live_system && return
-    if [ -b /dev/gpt-auto-root-luks ]; then
-        config_vars[GPT_AUTOMOUNT]=1
-    else
-        config_vars[GPT_AUTOMOUNT]=0
-    fi
-}
-
-val_config_var_gpt_automount() {
-    [[ "${config_vars[GPT_AUTOMOUNT]}" =~ [01] ]]
-}
-
-val_config_var_install_disk() {
-    test -b "${config_vars[INSTALL_DISK]}"
-}
-
-get_config_var() {
-    local getter val env validator
-    test -n "${config_vars["$1"]+x}" && return
-
-    # try to get value from the environment
-    env=SYL_"${1^^}"
-    if [ -n "${!env}" ]; then
-       config_vars["$1"]="${!env}"
-       return
-    fi
-
-    getter="get_config_var_${1@L}"
-    if declare -F "$getter" >/dev/null; then
-        $getter
-        test -n "${config_vars["$1"]+x}" && return
-    fi
-
-    msg "
-Setting '$1' not defined. Normally, this is because a previous step was skipped.
-This is the documentation for this setting:
- ${man_config_vars["$1"]}
-
-Please provide a value for this setting below. Be aware that provided values
-(including empty ones) will not be validated."
-    read -rp "  $1> " val
-    config_vars["$1"]="$val"
-    validator="val_config_var_${1@L}"
-    if ! $validator; then
-        msg "Invalid value ${config_vars["$1"]}. Exiting..."
-        exit 1
     fi
 }
 
@@ -406,17 +298,6 @@ ask_for_skip() {
     return $return
 }
 
-get_largest_empty_blk() {
-    local start end
-    start=$(sgdisk -F "$1") || exit 1
-    end=$(sgdisk -E "$1") || exit 1
-    echo -n "$(("$end" - "$start"))"
-}
-
-get_largest_empty_blk_in_m() {
-    echo -n "$(($(get_largest_empty_blk "$1") * 512 / 1000000))"
-}
-
 prompt_for_extra_pkgs() {
     declare -a pkgs
     msg "Please answer the following questions. The package that will be installed if you
@@ -621,7 +502,7 @@ step() {
     case "$1" in
         1)
             msg_bold "STEP ONE: Setting up the partition table"
-            explain step_1
+            explain step_1 "$0"
             # TODO: alternative partition layout
             ask_for_skip && setup_parts
             ;;
@@ -694,6 +575,7 @@ step() {
 if ! (return 0 2>/dev/null); then
     case "$STEP" in
         "")
+            clear
             STEP=1
             msg_bold -e "\033[37m
 -----------------------------------
@@ -702,6 +584,18 @@ Greetings! Let's install \033[34mArchLinux\033[37m!
 "
             ;;
         [0-9]*)
+            ;;
+        *)
+            if [ ${step_aliases[$STEP]+_} ]; then
+                STEP=${step_aliases[$STEP]}
+            else
+                msg "Invalid argument: $STEP"
+                exit 1
+            fi
+            ;;
+    esac
+
+
             if ((STEP > STEPS || STEP == 0)); then
                 msg "There is no step $STEP."
                 exit 1
@@ -714,12 +608,6 @@ That will start the portion of the script that is intended for the new system."
                 msg_bold -e "WARNING: Step $STEP is intended to be run from the installed system.\n"
                 pause
             fi
-            ;;
-        *)
-            msg "Invalid argument: $STEP"
-            exit 1
-            ;;
-    esac
 
     test_root || exit 1
     test_uefi || exit 1

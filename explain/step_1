@@ -6,6 +6,14 @@ required to be present on the disk:
 If either of these does not exist, you can create them interactively by
 following this step.
 
-A general note on using this script: If you abort the installation process at
-any time, you can restart at a specific step by passing its number to the
-script as an argument, for example: ./syl.sh 4
+A general note on using this script:
+If you abort the installation process at any time, you can restart at a specific
+step by passing its number to the script as an argument, for example:
+%1 4
+Instead of the step's number you may also enter an alias for the step which
+roughly describes its functionality and may be easier to remember. For example,
+this is equivalent to the above command:
+%1 mount
+
+The alias is given at the beginning of each step. A list of number, aliases and
+their corresponding steps may also be found in the readme.
