@@ -2,7 +2,7 @@
 # shellcheck source=SCRIPTDIR/syl.sh
 
 achroot() {
-    prexec arch-chroot /mnt "$@"
+    prexec arch-chroot -S /mnt "$@"
 }
 
 set_time() {
