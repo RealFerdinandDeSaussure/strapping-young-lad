@@ -463,6 +463,7 @@ enroll_secrets() {
 insert_crypttab_line() {
     local ct options name dev line
     ct=/etc/crypttab.initramfs
+    touch "$ct"
 
     get_config_var GPT_AUTOMOUNT
     if [ "${config_vars[GPT_AUTOMOUNT]}" -eq 0 ]; then
