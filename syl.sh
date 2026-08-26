@@ -77,6 +77,10 @@ msg_bold() {
     echo -e "${args[@]}" "\033[1m$1\033[0m" >&2
 }
 
+step_msg() {
+    echo -e "\033[1mSTEP $1: $2\033[0m (alias: $3)"
+}
+
 msg() {
     declare -a args
     while [ $# -gt 1 ]; do
@@ -501,23 +505,23 @@ step() {
 
     case "$1" in
         1)
-            msg_bold "STEP ONE: Setting up the partition table"
+            step_msg "ONE" "Setting up the partition table" "start/partition"
             explain step_1 "$0"
             # TODO: alternative partition layout
             ask_for_skip && setup_parts
             ;;
         2)
-            msg_bold "STEP TWO: Encrypting and formatting the partitions"
+            step_msg "TWO" "Encrypting and formatting the partitions" "encrypt/format"
             explain step_2
             ask_for_skip && encrypt_parts
             ;;
         3)
-            msg_bold "STEP THREE: Creating btrfs subvolumes"
+            step_msg "THREE" "Creating btrfs subvolumes" "btrfs/subvolume"
             explain step_3
             ask_for_skip && setup_root
             ;;
         4)
-            msg_bold "STEP FOUR: Mounting partitions and subvolumes"
+            step_msg "FOUR" "Mounting partitions and subvolumes" "mount"
             get_config_var XBOOTLDR_PARTITION
             if [ -n "${config_vars[XBOOTLDR_PARTITION]}" ]; then
                 explain step_4 "EFI system partition: /mnt/efi
@@ -528,42 +532,42 @@ step() {
                 ask_for_skip && mount_system
             ;;
         5)
-            msg_bold "STEP FIVE: Bootstrapping the system"
+            step_msg "FIVE" "Bootstrapping the system" "bootstrap"
             explain step_5
             ask_for_skip && bootstrap
             ;;
         6)
-            msg_bold "STEP SIX: Setting up the system"
+            step_msg "SIX" "Setting up the system" "base"
             explain step_6
             ask_for_skip && prepare_system
             ;;
         7)
-            msg_bold "STEP SEVEN: Making the system bootable"
+            step_msg "SEVEN" "Making the system bootable" "boot"
             explain step_7
             ask_for_skip && make_bootable
             ;;
         8)
-            msg_bold "STEP EIGHT: Copying the script to the new system"
+            step_msg "EIGHT" "Copying the script to the new system" "scriptcopy"
             explain step_8
             ask_for_skip && prepare_for_reboot
             ;;
         9)
-            msg_bold "STEP NINE: Setting up a basic firewall"
+            step_msg "NINE" "Setting up a basic firewall" "firewall"
             explain step_9
             ask_for_skip && setup_firewall
             ;;
         10)
-            msg_bold "STEP TEN: Setting up Secure Boot"
+            step_msg "TEN" "Setting up Secure Boot" "secureboot"
             explain step_10
             ask_for_skip && setup_sboot
             ;;
         11)
-            msg_bold "STEP ELEVEN: Enrolling additional secrets"
+            step_msg "ELEVEN" "Enrolling additional secrets" "secrets"
             explain step_11
             ask_for_skip && finalize_luks
             ;;
         12)
-            msg_bold "STEP TWELVE: Final settings"
+            step_msg "TWELVE" "Final settings" "final/end"
             explain step_12
             ask_for_skip && finish_setup
             ;;
