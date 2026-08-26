@@ -498,7 +498,7 @@ set_primary_secret() {
     part="$1"
     while read -r i; do
         secrets+=("$i")
-    done < <(systemd-cryptenroll "$part" | awk '{if ($1 ~ /[[:digit:]]/) print $2}')
+    done < <(systemd-cryptenroll "$part" | awk '{if ($1 ~ /[[:digit:]]/) print $2}' | sort -u)
 
     while true; do
         msg_bold "This is the final overview of secrets enrolled for $part:"
@@ -506,7 +506,9 @@ set_primary_secret() {
         if [ ${#secrets[@]} -eq 1 ]; then
             prim="${secrets[0]}"
         else
-            msg "Select which of these to use for unlocking at boot."
+            msg "Select which of these to use for unlocking at boot. If you have enrolled
+multiple secrets of the same type they will be tried against your hardware token
+in the order they were enrolled."
             prim="$(select_item "${secrets[@]}")"
         fi
         test "$prim" != "recovery" && break
