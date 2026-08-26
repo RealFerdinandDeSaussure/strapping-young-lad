@@ -289,8 +289,11 @@ get_secret_device() {
     declare -a devices
     cmd="$1"
     while read -r line; do
+        # wonky parsing of systemd-cryptenroll's output
+        test -z "$line" && break
+        test "$line" = "PATH" && continue
         devices+=("$line")
-    done < <(systemd-cryptenroll --"$cmd" list 2>/dev/null | awk '{if ($1 != "PATH") print $1}')
+    done < <(systemd-cryptenroll --"$cmd" list 2>/dev/null | cut -d" " -f1)
 
     if [ ${#devices[@]} -eq 0 ]; then
         return
