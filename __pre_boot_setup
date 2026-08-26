@@ -168,7 +168,7 @@ options edns0"
     fi
 
     msg "Enabling systemd network services..."
-    achroot systemctl enable systemd-networkd.service || exit 1
+    achroot systemctl enable --now systemd-networkd.service || exit 1
     if [ -n "$wifi_serv" ]; then
         achroot systemctl enable iwd.service || exit 1
     fi
@@ -251,16 +251,15 @@ create_zram() {
 
     msg "Editing zram-generator config file..."
     echo "[zram0]
-zram-size = min(ram / 2, 4096)
-compression-algorithm = zstd" > "$zram_conf"
+zram-size = min(ram / 2, 4096)" > "$zram_conf"
     explain_and_confirm zram-generator.conf || pause
     edit_file "$zram_conf"
 
     # in case the user has added additional zram devices
     while read -r line; do
         zram_dev="${line:1:-1}"
-        msg "Enabling systemd service for ${zram_dev}..."
-        achroot systemctl enable systemd-zram-setup@"$zram_dev".service
+        msg "Starting systemd service for ${zram_dev}..."
+        achroot systemctl start systemd-zram-setup@"$zram_dev".service
     done < <(grep -E '^\[.+?\]$' "$zram_conf")
 }
 

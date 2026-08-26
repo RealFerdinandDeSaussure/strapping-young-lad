@@ -1,4 +1,4 @@
-systemd supports auto-mounting the root partition through their
+systemd supports auto-mounting the root partition through the
 systemd-gpt-auto-generator. This simplifies the boot setup. If this feature is
 used, the encrypted partition will be made available at /dev/gpt-auto-root-luks
 and the unlocked root partition at /dev/gpt-auto-root.

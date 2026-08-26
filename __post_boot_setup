@@ -143,9 +143,12 @@ create_ms_db() {
 
 signing_fail() {
     msg "Enrolling was not succesful. This is often because the firmware has locked
-    access to EFI variables. You can sometimes circumvent this be setting or
-    resetting the firmware password. After doing so, try running \"$0 10\" or
-    \"$0 secureboot\" again."
+access to EFI variables. Please reboot into the UEFI firmware interface and check if you are in user mode.
+Afterwards, try running
+$0 10
+or
+$0 secureboot
+again."
 
     exit 1
 }
@@ -304,6 +307,12 @@ enroll_tpm() {
     local uki_conf part device priv_key pub_key header
     uki_conf=/etc/kernel/uki.conf
     part="$1"
+
+    if ! pacman -Q tpm2-tss >/dev/null 2>&1; then
+        msg "Installing required package tpm2-tss..."
+        prexec pacman -S tpm2-tss
+    fi
+
     device="$(get_secret_device tpm2-device)"
     if [ -z "$device" ]; then
         msg "No TPM2 device found. Cannot continue with this secret."
@@ -342,6 +351,12 @@ enroll_tpm() {
 enroll_fido2() {
     local part device pin presence verification
     part="$1"
+
+    if ! pacman -Q libfido2 >/dev/null 2>&1; then
+        msg "Installing required package libfido2..."
+        prexec pacman -S libfido2
+    fi
+
     device="$(get_secret_device "fido2-device")"
     if [ -z "$device" ]; then
         msg "No FIDO2 token found. Cannot continue with this secret."
@@ -363,6 +378,12 @@ enroll_fido2() {
 enroll_pkcs11() {
     local part device
     part="$1"
+
+    if ! pacman -Q libp11-kit >/dev/null 2>&1; then
+        msg "Installing required package libp11-kit..."
+        prexec pacman -S libp11-kit
+    fi
+
     device=$(get_secret_device "pkcs11-token-uri")
     if [ -z "$device" ]; then
         msg "No PKCS#11 token found. Cannot continue with this secret."
