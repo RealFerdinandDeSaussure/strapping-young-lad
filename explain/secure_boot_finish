@@ -9,3 +9,9 @@ or
 to execute the current step again. When asked, do not choose to skip it! If
 everything went as expected, the script will let you know that Secure Boot is
 already active. You will then be taken to the next step.
+
+If on the other hand, the step continues as before, cancel, reboot into the
+firmware and make sure Secure Boot is turned on. You probably know it by now,
+but you can use the following command to boot directly into the firmware
+interface:
+systemctl reboot --firmware-setup

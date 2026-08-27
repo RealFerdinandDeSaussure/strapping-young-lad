@@ -242,6 +242,11 @@ setup_sboot() {
             return
             ;;
         "setup")
+            msg "It appears the system is in Secure Boot setup mode. This detection can be
+unreliable however and unless you yourself have activated setup mode in the
+firmware interface, assume that the mode is not active."
+            ask_y_n "Would you like more information about setup mode?" || confirm_and_explain setup_mode "$0"
+            ask_y_n "Would you like to contine?" || exit 1
             backup_sb_efivars
             ;;
         "broken")
@@ -503,7 +508,7 @@ set_primary_secret() {
 
     while true; do
         msg_bold "This is the final overview of secrets enrolled for $part:"
-        printf "%s\n" "${secrets[@]}"
+        systemd-cryptenroll "$part"
         if [ ${#secrets[@]} -eq 1 ]; then
             prim="${secrets[0]}"
         else
@@ -522,13 +527,13 @@ different method."
     explain_and_confirm crypttab.initramfs_token || pause
     case "$prim" in
         tpm2)
-            insert_crypttab_line "tpm2-device=$(get_secret_device tpm2-device)"
+            insert_crypttab_line "tpm2-device=auto"
             ;;
         fido2)
-            insert_crypttab_line "fido2-device=$(get_secret_device fido2-device)"
+            insert_crypttab_line "fido2-device=auto"
             ;;
         pkcs11)
-            insert_crypttab_line "pkcs11-token-uri=$(get_secret_device "pkcs11-token-uri")"
+            insert_crypttab_line "pkcs11-token-uri=auto"
             ;;
         *)
             :
