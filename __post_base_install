@@ -158,9 +158,9 @@ setup_pipewire() {
     ask_y_n "Would you like to also install the PipeWire documentation package?" && pkgs+=("pipewire-docs")
     prexec pacman -Sy --needed "${pkgs[@]}" || exit 1
 
-    for u in /home/*; do
-        users+=("$(basename "$u")")
-    done
+    while read -r line; do
+        users+=("$line")
+    done < <(userdbctl -R --output=classic | cut -d: -f1)
     test ${#users[@]} -eq 0 && return
 
     msg "PipeWire can be enabled on a per-user basis. Please give a list of users
@@ -182,6 +182,35 @@ setup_pipewire() {
     done
 }
 
+setup_auto_login() {
+    local choice dropin
+    dropin=/etc/systemd/system/getty@tty1.service.d/autologin.conf
+    declare -a users
+
+    while read -r line; do
+        users+=("$line")
+    done < <(userdbctl -R --output=classic | cut -d: -f1)
+    test ${#users[@]} -eq 0 && return
+
+    if [ ${#users[@]} -eq 1 ]; then
+        choice="${users[0]}"
+    else
+        msg "Please select the user that will log in automatically at boot."
+        tab_display "${users[@]}"
+        choice="$(select_item "${users[@]}")"
+    fi
+
+    msg "Editing ${dropin}..."
+    mkdir -p "$(dirname "$dropin")"
+
+    explain getty-dropin "$dropin" "$choice"
+    echo "[Service]
+ExecStart=
+ExecStart=-/usr/bin/agetty --skip-login --nonewline --noissue --autologin ${choice} --noreset --noclear - \${TERM}" > "$dropin"
+    edit_file "$dropin"
+    msg "The edits in the drop-in file will be picked up at the next boot."
+}
+
 finish_setup() {
     explain pacman_color
     ask_y_n "Would you like to enable pacman color output?" && { sed -i 's/^#Color/Color/' /etc/pacman.conf || exit 1; }
@@ -194,6 +223,11 @@ finish_setup() {
 
     explain sound_server
     ask_y_n "Would you like to set up PipeWire as an audio server?" && setup_pipewire
+
+    msg "If you have set up an encryption password, you may not want to enter another
+password for logging in. To avoid this, you can enable automatic login on the
+virtual console of tty1 (or any other tty but we will only deal with tty1)."
+    ask_y_n "Would you like to setup auto-login on tty1?" && setup_auto_login
 
     explain goodbye
 }

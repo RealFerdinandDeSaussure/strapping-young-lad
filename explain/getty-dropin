@@ -1,0 +1,25 @@
+systemd automatically enables the service getty@tty1.service to start a virtual
+console on the (pseudo) tty1 at boot. Consoles on ttys up to tty6 will be
+created on demand when you switch to them using Ctrl+Alt+{F1-F6}.
+
+To override the default options for the getty@tty1.service, we will create a
+dropin file at %1.
+We will override the ExecStart option to override the parameters passed to
+agetty, Arch Linux's default getty provider. You might notice the peculiar line
+ExecStart=
+in the file. This is needed to clear out the existing value of the ExecStart
+option. This pattern is commonly used in systemd drop-in files for overwriting
+existing options that allow multiple declarations.
+
+On the actual replacement line, we will be passing the following parameters:
+    - skip-login: skips prompting for a login name, effectively facilitating
+        automatic log in
+    - nonewline: removes the newline before the welcome message
+    - noissue: removes the welcome message itself
+    - autologin %2: specifies %2 as the user for the automatic log in
+    - noreset: keeps the virtual console's control modes as is
+    - noclear: doesn't clear the screen before prompting (or rather not
+        prompting) for a user
+
+The "${TERM}" passed as an argument refers to the virtual console.
+
