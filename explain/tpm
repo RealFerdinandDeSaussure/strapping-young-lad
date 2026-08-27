@@ -1,8 +1,10 @@
-Using the TPM to enroll a secret into the LUKS partition is highly recommended.
-The TPM can be used to only make the encryption keys available if Secure Boot
-has not been tampered with and the booted UKI is in an expected state. This
-setup is similar to how Windows protects the system by default. We will employ a
-slightly different approach, but more on that later.
+If you do not have a physical hardware token, using the TPM to enroll a secret
+is highly recommended. To the user, the password prompt will be very similar to
+the existing prompt but TPM provides much stronger protection behind the scenes.
+It can be used to only make the encryption keys available if Secure Boot has not
+been tampered with and the booted UKI is in an expected state. This setup is
+similar to how Windows protects the system by default. We will employ a slightly
+different approach, but more on that later.
 
 The TPM can also be used to secure a password, providing stronger protection
 than a regular software-based approach, although the particulars of this depend

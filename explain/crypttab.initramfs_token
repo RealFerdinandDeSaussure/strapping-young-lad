@@ -18,6 +18,11 @@ options corresponding to their respective devices are:
     - FIDO2: fido2-device=<device>
     - PKCS#11: pkcs11-token-uri=<uri>
 
+Note that while crypttab theoretically provides the option to explicitly name
+the targeted device for every option, this script will always set this parameter
+to "auto". Supplying a specific device path is unreliable (FIDO2), redundant
+(TPM2) and unnecessarily complex (PKCS#11).
+
 One thing to keep in mind is that the volume-name field MUST be set to a mapping
 name that corresponds to the root parameter on the kernel commandline (set in
 /etc/kernel/cmdline). For example, this parameter set on the commandline
