@@ -552,7 +552,7 @@ step() {
             ask_for_skip && prepare_for_reboot
             ;;
         9)
-            step_msg "NINE" "Setting up a basic firewall" "firewall"
+            step_msg "NINE" "Setting up a basic firewall" "firewall/postboot"
             explain step_9
             ask_for_skip && setup_firewall
             ;;
@@ -605,7 +605,7 @@ Greetings! Let's install \033[34mArchLinux\033[37m!
                 exit 1
             elif ((STEP < 9)) && ! test_on_live_system; then
                 msg_bold -e "WARNING: Step $STEP is intended to be run from Arch live media.\n"
-                echo "Run \"$0 9\" instead.
+                echo "Run \"$0 9\" or \"$0 postboot\" instead.
 That will start the portion of the script that is intended for the new system."
                 pause
             elif ((STEP > 8)) && test_on_live_system; then

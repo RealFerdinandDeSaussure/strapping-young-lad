@@ -168,7 +168,7 @@ options edns0"
     fi
 
     msg "Enabling systemd network services..."
-    achroot systemctl enable --now systemd-networkd.service || exit 1
+    achroot systemctl enable systemd-networkd.service || exit 1
     if [ -n "$wifi_serv" ]; then
         achroot systemctl enable iwd.service || exit 1
     fi
@@ -259,7 +259,6 @@ zram-size = min(ram / 2, 4096)" > "$zram_conf"
     while read -r line; do
         zram_dev="${line:1:-1}"
         msg "Starting systemd service for ${zram_dev}..."
-        achroot systemctl start systemd-zram-setup@"$zram_dev".service
     done < <(grep -E '^\[.+?\]$' "$zram_conf")
 }
 

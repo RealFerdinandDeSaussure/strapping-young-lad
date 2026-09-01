@@ -245,7 +245,7 @@ setup_sboot() {
             msg "It appears the system is in Secure Boot setup mode. This detection can be
 unreliable however and unless you yourself have activated setup mode in the
 firmware interface, assume that the mode is not active."
-            ask_y_n "Would you like more information about setup mode?" || confirm_and_explain setup_mode "$0"
+            ask_y_n "Would you like more information about setup mode?" && explain_and_confirm setup_mode "$0"
             ask_y_n "Would you like to contine?" || exit 1
             backup_sb_efivars
             ;;
