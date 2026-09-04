@@ -84,6 +84,7 @@ session		include		system-auth" > /etc/pam.d/sudo
     fi
     msg "Creating symlinks to sudo for sudo-rs..."
     prexec ln -vbs --suffix=.bckp /usr/bin/sudo-rs /usr/local/bin/sudo || exit 1
+    prexec ln -vbs --suffix=.bckp /usr/bin/sudoedit-rs /usr/local/bin/sudoedit || exit 1
     prexec ln -vbs --suffix=.bckp /etc/pam.d/sudo /etc/pam.d/sudo-i || exit 1
 }
 
