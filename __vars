@@ -1,6 +1,7 @@
 # -*-bash-ts-*-
 # shellcheck source=SCRIPTDIR/syl.sh
 
+EDK2REPO="https://github.com/tianocore/edk2.git"
 SCRIPTREPO="https://github.com/RealFerdinandDeSaussure/strapping-young-lad" 
 STEPS=12
 

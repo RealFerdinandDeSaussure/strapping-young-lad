@@ -230,10 +230,98 @@ sign_bootloader_ukis() {
     bootctl install --no-variables || exit 1
 }
 
+make_edk_base_tools() {
+    local edk2_path venv_path
+    edk2_path="$1"
+    declare -a pythonpaths
+    declare -x PYTHONPATH
+    declare -x PATH="$PATH"
+
+    prexec pacman -Sy --needed python git || return 1
+
+    msg "Cloning from EDK2 repo..."
+    prexec git clone "$EDK2REPO" "$edk2_path" || return 1
+
+    msg "Setting up Python virtual environment..."
+    venv_path="${edk2_path}/.venv"
+    prexec python -m venv "$venv_path" || return 1
+    pythonpaths=("${venv_path}/lib"*"/python"*"/site-packages")
+    PYTHONPATH=$(IFS=: ; echo "${pythonpaths[*]}")
+    PATH="${venv_path}/bin:$PATH"
+
+    prexec pip install -r "${edk2_path}/pip-requirements.txt" --upgrade || return 1
+    prexec git -c core.longpaths=true -C "$edk2_path" submodule update --init --recursive || return 1
+    prexec stuart_setup -c "${edk2_path}/.pytool/CISettings.py" || return 1
+
+    msg "Building EDK2 BaseTools..."
+    prexec python "${edk2_path}/BaseTools/Edk2ToolsBuild.py" -t GCC5 || return 1
+}
+
+dump_oprom() {
+    local base dev_path dump_path
+    dump_path="$1"
+    dev_path="$2"
+    base="$(basename "$(dirname "$dev_path")")"
+    msg "Dumping Option ROM for ${base}..."
+    prexec echo 1 > "$dev_path" || exit 1
+    if ! prexec cat "$dev_path" > "${dump_path}/${base}.rom"; then
+       explain option_rom_dump_fail "$base"
+       ask_y_n "Would you like to continue anyway?" || exit 1
+    fi
+    prexec echo 0 > "$dev_path" || exit 1
+}
+
+check_oprom() {
+    local cwd op_tmp_dir edk2_path 
+    declare -a opr_devices
+    cwd="$(pwd)"
+    op_tmp_dir="$1"
+    edk2_path="${op_tmp_dir}/edk2"
+    while read -r line; do
+        opr_devices+=("$line")
+    done < <(find /sys/devices -name rom)
+
+    if [ ${#opr_devices[@]} -gt 0 ]; then
+        for dev in "${opr_devices[@]}"; do
+            echo -en "\033[1m- "
+            lspci -s "$(basename "$(dirname "$dev")")" | cut -d" " -f2-
+            echo -en "\033[0m"
+        done
+        explain option_rom
+        ask_y_n "Would you like to check the signatures for the Option ROM of the devices listed above?" || return
+        for dev in "${opr_devices[@]}"; do
+            dump_oprom "$op_tmp_dir" "$dev"
+        done
+
+        if ! compgen "${op_tmp_dir}/*.rom"; then
+            msg "No Option ROM extracted, skipping further Option ROM handling..."
+            return
+        fi
+        
+        make_edk_base_tools "$edk2_path"|| exit 1
+        local start end
+        for rom in "${op_tmp_dir}"/*.rom; do
+            while read -r -u 3 line; do
+                start="$(cut -d- -f1 <<< "$line")"
+                end="$(cut -d- -f2 <<< "$line")"
+                msg "Extracting EFI section from ROM..."
+                prexec dd if="$rom" ibs=1 skip=$(( start + end )) of="${rom}.efi.compr" || return 1
+                prexec "${edk2_path}/BaseTools/Source/C/bin/TianoCompress" -d --uefi -v "${rom}.efi.compr" -o "${rom}.efi" || return 1
+                msg_bold -n "Option ROM at $start for "
+                lspci -s "$(basename "$rom" ".rom")" | cut -f2- -d" "
+                prexec sbverify --list "${rom}.efi" || return 1
+                explain option_rom_signature
+                ask_for_skip || exit 1
+            done 3< <("${edk2_path}/BaseTools/Source/C/bin/EfiRom" -d "$rom" | perl -0777 -nE 'while ($_ =~ /(?:^|\n)(?<img>Image.+?)(?=\nImage|$)/gs) { say $1 . "-" . $2 if $+{img} =~ /^Image.+?(0x\S+).+?EFI image offset\s+(0x\S+)/s; }')
+        done
+    fi
+}
+
 setup_sboot() {
     local sb_mode sb_tmp_dir ms_tmp_dir
     sb_tmp_dir="$(mktemp -d)"
     ms_tmp_dir="$(mktemp -d)"
+    op_tmp_dir="$(mktemp -d)"
     sb_mode="$(get_sb_mode)"
 
     case "$sb_mode" in
@@ -263,6 +351,7 @@ This should never happen. Check your firmware's Secure Boot implementation."
             ;;
     esac
 
+    check_oprom "$op_tmp_dir"
     create_sb_keyset "$sb_tmp_dir"
     store_sb_keyset "$sb_tmp_dir"
 

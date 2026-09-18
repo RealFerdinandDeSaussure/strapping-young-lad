@@ -1,0 +1,6 @@
+You can see the signature of the extracted Option ROM above.
+Please ensure that it states Microsoft as the signature issuer (for example
+"Microsoft Corporation UEFI CA 2011" or "Microsoft Corporation Third Party
+Marketplace Root" for the 2011 certificates). If a different issuer is
+mentioned, you cannot enroll their keys through this script. You either need to
+set up Secure Boot manually or skip it altogether.

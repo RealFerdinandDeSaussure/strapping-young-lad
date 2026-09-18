@@ -1,0 +1,9 @@
+The Option ROM for the following device could not be dumped to disk:
+%1
+
+This could mean that the device does not actually have an Option ROM of its own
+but is part of the chipset. In that case, it does not have a signature that
+needs to be verified and should therefore work fine, regardless of what the keys
+the user enrolls. However, it could also mean something else entirely and it is
+recommended to research the device and the machine itself online to safeguard
+against any issues that might occur when using Secure Boot.

@@ -1,0 +1,19 @@
+The devices listed above are installed on your system and depend on Option ROM.
+If these are plug-and-play extension cards, it is near certain that they have
+been signed with Microsoft's keys (older devices may also not have been signed
+at all). As we will enroll Microsoft's Secure Boot keys, proceeding should cause
+no issues with these devices.
+
+If you are on a laptop or other OEM hardware, these could have been signed with
+keys other than Microsoft's. If your BIOS allows wiping the Secure Boot keys,
+that is a good sign that all hardware included with the device is *intended* to
+run with no keys or only Microsoft's keys enrolled. This again would mean that
+enrolling custom keys as well as Microsoft's (as done by this script) is
+sufficient to have them functioning properly.
+
+It is possible to dump the Option ROM and check its signature to make sure it
+has actually been signed with Microsoft's keys. This is a safe but rather
+involved step, as it requires manually building parts of Intel's EDK2 (EFI
+Development Kit 2). This script will take care of the process but be aware that
+it may take some time. You will also be prompted for some visual confirmation as
+not all parts of the process can be automated reliably and/or securely.
