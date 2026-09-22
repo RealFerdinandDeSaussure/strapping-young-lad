@@ -1,5 +1,5 @@
 Now, we will edit the mkinitcpio preset file(s). Each preset file corresponds to
-an installed kernel, allowing configuration on a per-kernel based. Further
+an installed kernel, allowing configuration on a per-kernel basis. Further
 "sub-presets" may be specified in the file. By default, this only includes
 "default" and "fallback". Configuration for both these "sub-presets" is done in
 a single preset file.

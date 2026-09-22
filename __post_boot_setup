@@ -70,11 +70,34 @@ create_sb_key() {
 store_sb_keyset() {
     local sb_dir sb_tmp_dir
     sb_tmp_dir="$1"
-    sb_dir="$HOME/sb-keys"
+    sb_dir="$2"
     msg "Storing generated keys in ${sb_dir}..."
     prexec mkdir -p "${sb_dir}"
     prexec cp -v "$sb_tmp_dir"/* "${sb_dir}"
     echo "These keys are used for secure boot signing! Do not delete them!" > "${sb_dir}"/DO_NOT_DELETE
+}
+
+prepare_existing_keyset() {
+    local sb_dir sb_tmp_dir
+    sb_dir="$1"
+    sb_tmp_dir="$2"
+    for ft in auth cer crt esl key; do
+        for i in PK KEK db; do
+            cp -v "$sb_dir/${i}.${ft}" "$sb_tmp_dir/"
+        done
+    done
+}
+
+test_sb_keyset_exists() {
+    local sb_dir
+    sb_dir="$1"
+    for ft in auth cer crt esl key; do
+        for i in PK KEK db; do
+            test -f "$sb_dir/${i}.${ft}" || return 1
+        done
+    done
+    test -f "$sb_dir/noPK.auth" || return 1
+    return
 }
 
 create_sb_keyset() {
@@ -319,6 +342,7 @@ check_oprom() {
 
 setup_sboot() {
     local sb_mode sb_tmp_dir ms_tmp_dir
+    sb_dir="$HOME/sb-keys"
     sb_tmp_dir="$(mktemp -d)"
     ms_tmp_dir="$(mktemp -d)"
     op_tmp_dir="$(mktemp -d)"
@@ -352,8 +376,19 @@ This should never happen. Check your firmware's Secure Boot implementation."
     esac
 
     check_oprom "$op_tmp_dir"
-    create_sb_keyset "$sb_tmp_dir"
-    store_sb_keyset "$sb_tmp_dir"
+
+    if test_sb_keyset_exists "$sb_dir"; then
+        msg "Existing Secure Boot keyset found."
+        if ask_y_n "Would you like to use the existing keyset?"; then
+            prepare_existing_keyset "$sb_dir" "$sb_tmp_dir"
+        else
+            create_sb_keyset "$sb_tmp_dir"
+        fi
+    else
+        create_sb_keyset "$sb_tmp_dir"
+    fi
+
+    store_sb_keyset "$sb_tmp_dir" "$sb_dir"
 
     create_ms_db "$ms_tmp_dir" "$sb_tmp_dir"
 
