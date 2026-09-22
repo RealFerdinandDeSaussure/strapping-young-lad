@@ -625,6 +625,7 @@ That will start the portion of the script that is intended for the new system."
     for s in $(seq "$STEP" "$STEPS"); do
         step "$s"
         pause
-        clear
+        # don't clear on final step
+        test "$STEP" -eq "$STEPS" || clear
     done
 fi

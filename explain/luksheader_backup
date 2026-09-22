@@ -8,6 +8,6 @@ restore this header with the following command:
 cryptsetup luksHeaderRestore --header-backup-file=<backup-file> <LUKS-partition>
 
 Creating a backup of the LUKS header or restoring the backup does not alter the
-volumes encryption setup (before corruption) in any way. After restoring the
+volume's encryption setup (before corruption) in any way. After restoring the
 header, you will still need access to your enrolled secrets to unlock the
 encrypted partition.

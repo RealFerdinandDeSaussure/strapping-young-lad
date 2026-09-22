@@ -1,5 +1,5 @@
 That concludes the Secure Boot setup. In future, systemd will be used to sign
-files for Scure Boot. If you would like, you can now remove the sbsigntools
+files for Secure Boot. If you would like, you can now remove the sbsigntools
 package.
 
 You should now reboot the system and run

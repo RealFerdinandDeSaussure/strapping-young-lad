@@ -205,7 +205,7 @@ setup_auto_login() {
     msg "Editing ${dropin}..."
     mkdir -p "$(dirname "$dropin")"
 
-    explain getty-dropin "$dropin" "$choice"
+    explain_and_confirm getty-dropin "$dropin" "$choice"
     echo "[Service]
 ExecStart=
 ExecStart=-/usr/bin/agetty --skip-login --nonewline --noissue --autologin ${choice} --noreset --noclear - \${TERM}" > "$dropin"
@@ -218,7 +218,7 @@ finish_setup() {
     ask_y_n "Would you like to enable pacman color output?" && { sed -i 's/^#Color/Color/' /etc/pacman.conf || exit 1; }
 
     explain sudo
-    ask_y_n "Would you like to set up or one of its alternatives?" && setup_sutool
+    ask_y_n "Would you like to set up sudo or one of its alternatives?" && setup_sutool
 
     explain users
     add_users
