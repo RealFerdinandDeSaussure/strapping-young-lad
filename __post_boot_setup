@@ -17,19 +17,15 @@ get_sb_mode() {
     local mode
     mode="$(LANG=en_US.UTF-8 bootctl | grep 'Secure Boot:' | cut -d: -f2 | xargs)"
     case "$mode" in
-        "disabled (setup)")
-            shopt -s nullglob
-            declare -a PKs
-            PKs=(/sys/firmware/efi/efivars/PK*)
-            shopt -u nullglob
-            if [ ${#PKs[@]} -eq 0 ]; then
-                echo -n "setup"
-            else
-                echo -n "broken"
-            fi
-            ;;
         "enabled (user)")
             echo -n "on"
+            ;;
+        "disabled (setup)")
+            if efi-readvar -v PK | head -n1 | grep -Eq 'length [[:digit:]]+'; then
+                echo -n "broken"
+            else
+                echo -n "setup"
+            fi
             ;;
         *)
             echo -n "off"
@@ -43,7 +39,7 @@ backup_sb_efivars() {
     mkdir -p "$bckp_folder"
 
     explain_and_confirm secure_boot
-    prexec pacman -Sy --needed efitools sbsigntools systemd-ukify || exit 1
+    prexec pacman -Sy --needed sbsigntools systemd-ukify || exit 1
 
     msg "Backing up Secure Boot efivars..."
     explain_and_confirm backup_efivars "${bckp_folder}"
@@ -353,8 +349,13 @@ setup_sboot() {
     sb_tmp_dir="$(mktemp -d)"
     ms_tmp_dir="$(mktemp -d)"
     op_tmp_dir="$(mktemp -d)"
-    sb_mode="$(get_sb_mode)"
 
+    if ! pacman -Qq efitools >/dev/null 2>&1; then
+        msg "Installing efitools so we can determine current Secure Boot mode..."
+        prexec pacman -Sy --needed efitools || exit 1
+    fi
+
+    sb_mode="$(get_sb_mode)"
     case "$sb_mode" in
         "on")
             msg "Secure Boot is already set up. There is nothing to do."

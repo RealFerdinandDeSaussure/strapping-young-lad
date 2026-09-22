@@ -3,6 +3,5 @@ not have to go through this ordeal on your own.
 
 Before we start, we will install the following packages that will help us
 through the process:
-    - efitools: for accessing and manipulating UEFI variables
     - sbsigntools: for signing keys and binaries
     - systemd-ukify: for auto-signing UKIs after building them
