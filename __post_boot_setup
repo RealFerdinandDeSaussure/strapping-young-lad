@@ -194,11 +194,18 @@ enroll_keys() {
 
     explain_and_confirm enroll_keys "${sbsign_dir}"
 
-    for k in /sys/firmware/efi/efivars/{PK,KEK,db}*; do
-        prexec chattr -i "$k"
+    while true; do
+        for k in /sys/firmware/efi/efivars/{PK,KEK,db}*; do
+            prexec chattr -i "$k"
+        done
+        prexec sbkeysync --keystore "$sbsign_dir" && break
+        msg "Could not enroll some of the keys. This could be because the corresponding EFI
+variables where locked immediately after the Microsoft keys were enrolled.
+Unlocking these variables again might allow enrolling the custom keys."
+        ask_y_n "Would you like to try this now?" || signing_fail
     done
-    prexec sbkeysync --keystore "$sbsign_dir" || signing_fail
     msg "Key Exchange Keys and Database enrolled."
+
     prexec efi-updatevar -f "${sbsign_dir}/PK/PK.auth" PK || signing_fail
     msg "Platform Key enrolled."
 
